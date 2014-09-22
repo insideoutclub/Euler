@@ -3,76 +3,136 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using Function = System.Func<int, int, int, int>;
 
 namespace _01CSharp
 {
+    static class ExtensionMethods
+    {
+        // Returns true if x is a multiple of y
+        public static bool IsMultipleOf(this int x, int y) { return x % y == 0; }
+    }
+
     class Program
     {
-        public static KeyValuePair<T, double> Benchmark<T>(Func<T> func, int iterations)
+        // Run action the number of times specified by iterations
+        // Returns the elapsed time in milliseconds
+        public static double Benchmark(Action action, int iterations)
         {
-            var result = func(); // Don't count the first run
+            action();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
             var stopwatch = Stopwatch.StartNew();
             for (var i = 0; i != iterations; ++i)
-                func();
-            stopwatch.Stop();
-            return new KeyValuePair<T, double>(result, stopwatch.Elapsed.TotalMilliseconds);
+                action();
+            return stopwatch.Elapsed.TotalMilliseconds;
         }
 
-        public bool IsMultipleOf(int x, int y) { return y % x == 0; }
-
-        public static int imperative()
+        // Generate [1, limit)
+        // Filter out multiples of x and y
+        // Returns sum
+        public static int FilterInlineImperative(int limit, int x, int y)
         {
             var sum = 0;
-            for (var i = 1; i != 1000; ++i)
-                if (i % 3 == 0 || i % 5 == 0)
+            for (var i = 1; i < limit; ++i)
+                if (i % x == 0 || i % y == 0)
                     sum += i;
             return sum;
         }
 
-        public static int imperative2()
+        // Same as FilterInlineImperative, except multiples filter is a function call
+        public static int FilterFunctionCallImperative(int limit, int x, int y)
         {
             var sum = 0;
-            for (var i = 3; i < 1000; i += 3)
-                sum += i;
-            for (var i = 5; i < 1000; i += 5)
-                sum += i;
-            for (var i = 15; i < 1000; i += 15)
-                sum -= i;
+            for (var i = 1; i < limit; ++i)
+                if (i.IsMultipleOf(x) || i.IsMultipleOf(y))
+                    sum += i;
             return sum;
         }
 
-        public static int functional()
+        // Sum multiples of x
+        // Sum multiples of y
+        // Subtract multiples of x * y to eliminate duplicates
+        public static int GenerateMultiplesImperative(int limit, int x, int y)
         {
-            return Enumerable.Range(1, 999).Where(i => i % 3 == 0 || i % 5 == 0).Sum();
+            var sum = 0;
+            for (var i = x; i < limit; i += x) sum += i;
+            for (var i = y; i < limit; i += y) sum += i;
+            for (var i = x * y; i < limit; i += x * y) sum -= i;
+            return sum;
         }
 
-        public static IEnumerable<int> MultiplesOf(int first, int last)
+        public static int SumMultiples(int x, int limit)
         {
-            var step = first;
-            for (; first < last; first += step)
-                yield return first;
+            var sum = 0;
+            for (var i = x; i < limit; i += x) sum += i;
+            return sum;
         }
 
-        public static int functional2()
+        // Sum multiples of x
+        // Sum multiples of y
+        // Subtract multiples of x * y to eliminate duplicates
+        public static int GenerateMultiplesImperative2(int limit, int x, int y)
         {
-            return MultiplesOf(3, 1000).Sum() + MultiplesOf(5, 1000).Sum() - MultiplesOf(15, 1000).Sum();
+            return SumMultiples(x, limit) + SumMultiples(y, limit) - SumMultiples(x * y, limit);
+        }
+
+        // Generate [1, limit)
+        // Filter out multiples of x and y
+        // Returns sum
+        public static int FilterInlineFunctional(int limit, int x, int y)
+        {
+            return Enumerable.Range(1, limit - 1).Where(i => i % x == 0 || i % y == 0).Sum();
+        }
+
+        // Same as FilterInlineFunctional, except multiples filter is a function call
+        public static int FilterFunctionCallFunctional(int limit, int x, int y)
+        {
+            return Enumerable.Range(1, limit - 1).Where(i => i.IsMultipleOf(x) || i.IsMultipleOf(y)).Sum();
+        }
+
+        // Generate multiples of x up to but not including limit
+        public static IEnumerable<int> MultiplesOf(int x, int limit)
+        {
+            for (var i = x; i < limit; i += x) yield return i;
+        }
+
+        // Sum multiples of x
+        // Sum multiples of y
+        // Subtract multiples of x * y to eliminate duplicates
+        public static int GenerateMultiplesFunctional(int limit, int x, int y)
+        {
+            return MultiplesOf(x, limit).Sum() + MultiplesOf(y, limit).Sum() - MultiplesOf(x * y, limit).Sum();
         }
 
         static void Main(string[] args)
         {
-            var experiments = new[] {
-                new KeyValuePair<string, Func<int>>("imperative", imperative),
-                new KeyValuePair<string, Func<int>>("imperative2", imperative2),
-                new KeyValuePair<string, Func<int>>("functional", functional),
-                new KeyValuePair<string, Func<int>>("functional2", functional2),
+            var experiments = new Function[] {
+                FilterInlineImperative,
+                FilterFunctionCallImperative,
+                GenerateMultiplesImperative,
+                GenerateMultiplesImperative2,
+                FilterInlineFunctional,
+                FilterFunctionCallFunctional,
+                GenerateMultiplesFunctional,
             };
-            Console.WriteLine(experiments[0].Value.Method.Name);
-            foreach(var result in experiments.Select(kvp => new KeyValuePair<string, KeyValuePair<int, double>>(kvp.Key, Benchmark(kvp.Value, 1000))).OrderBy(kvp => kvp.Value.Value))
-                Console.WriteLine(result);
+
+            const int limit = 1000, x = 3, y = 5;
+#if false
+            var results = new double[experiments.Length];
+            for (var i = 0; i < results.Length; ++i)
+                results[i] = Benchmark(() => experiments[i](limit, x, y), 1000);
+            Array.Sort(results, experiments);
+            for (var i = 0; i < results.Length; ++i)
+                Console.WriteLine("{0,-30} {1} {2:00.000}", experiments[i].Method.Name, experiments[i](limit, x, y), results[i]); 
+#else
+            foreach (var result in experiments
+                .Select(func => new { result = func(limit, x, y), time = Benchmark(() => func(limit, x, y), 1000), name = func.Method.Name })
+                .OrderBy(tuple => tuple.time))
+                Console.WriteLine("{0,-30} {1} {2:00.000}", result.name, result.result, result.time);
+#endif
         }
     }
 }
