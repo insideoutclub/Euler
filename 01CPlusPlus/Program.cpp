@@ -3,49 +3,30 @@
 #include <boost/range/numeric.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/algorithm/sort.hpp>
+#include <boost/range/algorithm/for_each.hpp>
 #include <iostream>
 #include <iomanip>
+#include <vector>
 
 // Returns true if x is a multiple of y
 struct IsMultipleOf {
   bool operator()(int const x, int const y) const { return x % y == 0; }
 };
 
-struct Stopwatch
-{
-  Stopwatch() : start{now()} {}
-
-  double elapsed() const {
-    auto finish = now();
-    static const auto freq = frequency();
-    return double(finish - start) / freq * 1000;
-  }
-
-private:
-  LONGLONG now() const {
-    LARGE_INTEGER result;
-    QueryPerformanceCounter(&result);
-    return result.QuadPart;
-  }
-  LONGLONG frequency() const {
-    LARGE_INTEGER frequency;
-    QueryPerformanceFrequency(&frequency);
-    return frequency.QuadPart;
-  }
-  LONGLONG start;
-};
-
 // Run action the number of times specified by iterations
 // Returns the elapsed time in milliseconds
 template<typename Action>
-static double Benchmark(Action action, int iterations)
+static __int64 Benchmark(Action action, int iterations)
 {
-  action();
+  auto start = LARGE_INTEGER();
+  QueryPerformanceCounter(&start);
 
-  auto stopwatch = Stopwatch{};
   for (auto i = 0; i != iterations; ++i)
       action();
-  return stopwatch.elapsed();
+
+  auto finish = LARGE_INTEGER();
+  QueryPerformanceCounter(&finish);
+  return finish.QuadPart - start.QuadPart;
 }
 
 // Generate [1, limit)
@@ -84,15 +65,14 @@ static int GenerateMultiplesImperative(int limit, int x, int y)
 
 static int SumMultiples(int x, int limit)
 {
-  auto sum = 0;
-  for (auto i = x; i < limit; i += x) sum += i;
-  return sum;
+  auto p = (limit - 1) / x;
+  return x * p * (p + 1) / 2;
 }
 
 // Sum multiples of x
 // Sum multiples of y
 // Subtract multiples of x * y to eliminate duplicates
-static int GenerateMultiplesImperative2(int limit, int x, int y)
+static int SumMultiples(int limit, int x, int y)
 {
   return SumMultiples(x, limit) + SumMultiples(y, limit) - SumMultiples(x * y, limit);
 }
@@ -102,7 +82,7 @@ static int GenerateMultiplesImperative2(int limit, int x, int y)
 // Returns sum
 static int FilterInlineFunctional(int limit, int x, int y)
 {
-  auto const multipleOfXOrY = [x, y](auto const i) { return i % x == 0 || i % y == 0; };
+  auto const multipleOfXOrY = [x, y](int const i) { return i % x == 0 || i % y == 0; };
   return boost::accumulate(boost::irange(1, limit)
                          | boost::adaptors::filtered(multipleOfXOrY), 0);
 }
@@ -110,14 +90,14 @@ static int FilterInlineFunctional(int limit, int x, int y)
 // Same as FilterInlineFunctional, except multiples filter is a function call
 static int FilterFunctionCallFunctional(int limit, int x, int y)
 {
-  auto const multipleOfXOrY = [x, y](auto const i) {
+  auto const multipleOfXOrY = [x, y](int const i) {
     return IsMultipleOf()(i, x) || IsMultipleOf()(i, y); };
   return boost::accumulate(boost::irange(1, limit)
                            | boost::adaptors::filtered(multipleOfXOrY), 0);
 }
 
 // Generate multiples of x up to but not including limit
-static auto MultiplesOf(int x, int limit)
+static boost::strided_integer_range<int> MultiplesOf(int x, int limit)
 {
   return boost::irange(x, limit, x);
 }
@@ -135,43 +115,30 @@ static int GenerateMultiplesFunctional(int limit, int x, int y)
 struct Result {
   char const* name;
   int answer;
-  double time;
+  __int64 time;
 
   Result() {}
-  Result(char const * const name, int answer, double time) :
+  Result(char const * const name, int answer, __int64 time) :
     name(name), answer(answer), time(time) {}
 };
 
+#define RUN_EXPERIMENT(functor) results.emplace_back(Result(#functor, functor(limit, x, y), Benchmark([limit, x, y]() { functor(limit, x, y); }, 1000)))
+
 int main()
 {
-  const struct {
-    char const* name;
-    int (*functor)(int limit, int x, int y);
-  } experiments[] = {
-    {"FilterInlineImperative", FilterInlineImperative},
-    {"FilterFunctionCallImperative", FilterFunctionCallImperative},
-    {"GenerateMultiplesImperative", GenerateMultiplesImperative},
-    {"GenerateMultiplesImperative2", GenerateMultiplesImperative2},
-    {"FilterInlineFunctional", FilterInlineFunctional},
-    {"FilterFunctionCallFunctional", FilterFunctionCallFunctional},
-    {"GenerateMultiplesFunctional", GenerateMultiplesFunctional},
-  };
-
   auto const limit = 1000, x = 3, y = 5;
 
-  auto results = std::vector<Result>{};
-  results.reserve(std::end(experiments) - std::begin(experiments));
+  auto results = std::vector<Result>();
+  RUN_EXPERIMENT(FilterInlineImperative);
+  RUN_EXPERIMENT(FilterFunctionCallImperative);
+  RUN_EXPERIMENT(GenerateMultiplesImperative);
+  RUN_EXPERIMENT(SumMultiples);
+  RUN_EXPERIMENT(FilterInlineFunctional);
+  RUN_EXPERIMENT(FilterFunctionCallFunctional);
+  RUN_EXPERIMENT(GenerateMultiplesFunctional);
 
-  for (auto const& experiment: experiments)
-    results.emplace_back(
-      experiment.name,
-      experiment.functor(limit, x, y),
-      Benchmark([&experiment]() { experiment.functor(limit, x, y); }, 1000));
-
-  auto const sortByTime = [](auto const& x, auto const& y) { return x.time < y.time; };
-  boost::sort(results, sortByTime);
-
-  for (auto const& result: results)
+  auto const sortByTime = [](Result const& x, Result const& y) { return x.time < y.time; };
+  boost::for_each(boost::sort(results, sortByTime), [](Result const& result) {
     std::cout << std::setw(30) << std::left << result.name << " " << result.answer << " " <<
-      result.time << "\n";
+        result.time << "\n"; });
 }

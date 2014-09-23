@@ -66,15 +66,14 @@ namespace _01CSharp
 
         public static int SumMultiples(int x, int limit)
         {
-            var sum = 0;
-            for (var i = x; i < limit; i += x) sum += i;
-            return sum;
+            var p = (limit - 1) / x;
+            return x * p * (p + 1) / 2;
         }
 
         // Sum multiples of x
         // Sum multiples of y
         // Subtract multiples of x * y to eliminate duplicates
-        public static int GenerateMultiplesImperative2(int limit, int x, int y)
+        public static int SumMultiples(int limit, int x, int y)
         {
             return SumMultiples(x, limit) + SumMultiples(y, limit) - SumMultiples(x * y, limit);
         }
@@ -113,7 +112,7 @@ namespace _01CSharp
                 FilterInlineImperative,
                 FilterFunctionCallImperative,
                 GenerateMultiplesImperative,
-                GenerateMultiplesImperative2,
+                SumMultiples,
                 FilterInlineFunctional,
                 FilterFunctionCallFunctional,
                 GenerateMultiplesFunctional,

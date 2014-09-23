@@ -4,3 +4,6 @@
 *.sln
 *.suo
 *.exe
+*.vcxproj.*
+*/Debug
+*/Release
