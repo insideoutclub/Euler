@@ -119,19 +119,10 @@ namespace _01CSharp
             };
 
             const int limit = 1000, x = 3, y = 5;
-#if false
-            var results = new double[experiments.Length];
-            for (var i = 0; i < results.Length; ++i)
-                results[i] = Benchmark(() => experiments[i](limit, x, y), 1000);
-            Array.Sort(results, experiments);
-            for (var i = 0; i < results.Length; ++i)
-                Console.WriteLine("{0,-30} {1} {2:00.000}", experiments[i].Method.Name, experiments[i](limit, x, y), results[i]); 
-#else
             foreach (var result in experiments
                 .Select(func => new { result = func(limit, x, y), time = Benchmark(() => func(limit, x, y), 1000), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
                 Console.WriteLine("{0,-30} {1} {2:00.000}", result.name, result.result, result.time);
-#endif
         }
     }
 }
