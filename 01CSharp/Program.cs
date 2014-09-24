@@ -30,20 +30,8 @@ namespace _01CSharp
             return stopwatch.Elapsed.TotalMilliseconds;
         }
 
-        // Generate [1, limit)
-        // Filter out multiples of x and y
-        // Returns sum
-        public static int FilterInlineImperative(int limit, int x, int y)
-        {
-            var sum = 0;
-            for (var i = 1; i < limit; ++i)
-                if (i % x == 0 || i % y == 0)
-                    sum += i;
-            return sum;
-        }
-
         // Same as FilterInlineImperative, except multiples filter is a function call
-        public static int FilterFunctionCallImperative(int limit, int x, int y)
+        public static int FilterImperative(int limit, int x, int y)
         {
             var sum = 0;
             for (var i = 1; i < limit; ++i)
@@ -78,16 +66,8 @@ namespace _01CSharp
             return SumMultiples(x, limit) + SumMultiples(y, limit) - SumMultiples(x * y, limit);
         }
 
-        // Generate [1, limit)
-        // Filter out multiples of x and y
-        // Returns sum
-        public static int FilterInlineFunctional(int limit, int x, int y)
-        {
-            return Enumerable.Range(1, limit - 1).Where(i => i % x == 0 || i % y == 0).Sum();
-        }
-
         // Same as FilterInlineFunctional, except multiples filter is a function call
-        public static int FilterFunctionCallFunctional(int limit, int x, int y)
+        public static int FilterFunctional(int limit, int x, int y)
         {
             return Enumerable.Range(1, limit - 1).Where(i => i.IsMultipleOf(x) || i.IsMultipleOf(y)).Sum();
         }
@@ -109,12 +89,10 @@ namespace _01CSharp
         static void Main(string[] args)
         {
             var experiments = new Function[] {
-                FilterInlineImperative,
-                FilterFunctionCallImperative,
+                FilterImperative,
                 GenerateMultiplesImperative,
                 SumMultiples,
-                FilterInlineFunctional,
-                FilterFunctionCallFunctional,
+                FilterFunctional,
                 GenerateMultiplesFunctional,
             };
 
@@ -122,7 +100,7 @@ namespace _01CSharp
             foreach (var result in experiments
                 .Select(func => new { result = func(limit, x, y), time = Benchmark(() => func(limit, x, y), 1000), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
-                Console.WriteLine("{0,-30} {1} {2:00.000}", result.name, result.result, result.time);
+                Console.WriteLine("{0,-30} {1} {2:00.0000}", result.name, result.result, result.time);
         }
     }
 }

@@ -16,7 +16,7 @@ struct IsMultipleOf {
 // Run action the number of times specified by iterations
 // Returns the elapsed time in milliseconds
 template<typename Action>
-static __int64 Benchmark(Action action, int iterations)
+static double Benchmark(Action action, int iterations)
 {
   auto start = LARGE_INTEGER();
   QueryPerformanceCounter(&start);
@@ -26,23 +26,17 @@ static __int64 Benchmark(Action action, int iterations)
 
   auto finish = LARGE_INTEGER();
   QueryPerformanceCounter(&finish);
-  return finish.QuadPart - start.QuadPart;
+
+  auto frequency = LARGE_INTEGER();
+  QueryPerformanceFrequency(&frequency);
+
+  return double(finish.QuadPart - start.QuadPart) * 1000 / frequency.QuadPart;
 }
 
 // Generate [1, limit)
 // Filter out multiples of x and y
 // Returns sum
-static int FilterInlineImperative(int limit, int x, int y)
-{
-  auto sum = 0;
-  for (auto i = 1; i < limit; ++i)
-    if (i % x == 0 || i % y == 0)
-      sum += i;
-  return sum;
-}
-
-// Same as FilterInlineImperative, except multiples filter is a function call
-static int FilterFunctionCallImperative(int limit, int x, int y)
+static int FilterImperative(int limit, int x, int y)
 {
   auto sum = 0;
   for (auto i = 1; i < limit; ++i)
@@ -80,20 +74,11 @@ static int SumMultiples(int limit, int x, int y)
 // Generate [1, limit)
 // Filter out multiples of x and y
 // Returns sum
-static int FilterInlineFunctional(int limit, int x, int y)
+static int FilterFunctional(int limit, int x, int y)
 {
-  auto const multipleOfXOrY = [x, y](int const i) { return i % x == 0 || i % y == 0; };
-  return boost::accumulate(boost::irange(1, limit)
-                         | boost::adaptors::filtered(multipleOfXOrY), 0);
-}
+  auto const multipleOfXOrY = [x, y](int const i) { return IsMultipleOf()(i, x) || IsMultipleOf()(i, y); };
 
-// Same as FilterInlineFunctional, except multiples filter is a function call
-static int FilterFunctionCallFunctional(int limit, int x, int y)
-{
-  auto const multipleOfXOrY = [x, y](int const i) {
-    return IsMultipleOf()(i, x) || IsMultipleOf()(i, y); };
-  return boost::accumulate(boost::irange(1, limit)
-                           | boost::adaptors::filtered(multipleOfXOrY), 0);
+  return boost::accumulate(boost::irange(1, limit) | boost::adaptors::filtered(multipleOfXOrY), 0);
 }
 
 // Generate multiples of x up to but not including limit
@@ -113,32 +98,46 @@ static int GenerateMultiplesFunctional(int limit, int x, int y)
 }
 
 struct Result {
-  char const* name;
-  int answer;
-  __int64 time;
+    Result() {}
+    Result(char const * const name, int answer, double time) : name(name), answer(answer), time(time) {}
 
-  Result() {}
-  Result(char const * const name, int answer, __int64 time) :
-    name(name), answer(answer), time(time) {}
+    char const* name;
+    int answer;
+    double time;
 };
 
-#define RUN_EXPERIMENT(functor) results.emplace_back(Result(#functor, functor(limit, x, y), Benchmark([limit, x, y]() { functor(limit, x, y); }, 1000)))
+struct Functor {
+    typedef int (*Function)(int limit, int x, int y);
+
+    Functor() {}
+    Functor(Function function, int limit, int x, int y) : function(function), limit(limit), x(x), y(y) {}
+
+    int operator()() const { return function(limit, x, y); }
+
+private:
+    Function function;
+    int limit;
+    int x;
+    int y;
+};
+
+#define RUN_EXPERIMENT(functor) results.emplace_back(Result(#functor, functor(limit, x, y), Benchmark(Functor(functor, limit, x, y), 1000)))
 
 int main()
 {
   auto const limit = 1000, x = 3, y = 5;
 
   auto results = std::vector<Result>();
-  RUN_EXPERIMENT(FilterInlineImperative);
-  RUN_EXPERIMENT(FilterFunctionCallImperative);
+
+  RUN_EXPERIMENT(FilterImperative);
   RUN_EXPERIMENT(GenerateMultiplesImperative);
   RUN_EXPERIMENT(SumMultiples);
-  RUN_EXPERIMENT(FilterInlineFunctional);
-  RUN_EXPERIMENT(FilterFunctionCallFunctional);
+  RUN_EXPERIMENT(FilterFunctional);
   RUN_EXPERIMENT(GenerateMultiplesFunctional);
 
   auto const sortByTime = [](Result const& x, Result const& y) { return x.time < y.time; };
+
   boost::for_each(boost::sort(results, sortByTime), [](Result const& result) {
     std::cout << std::setw(30) << std::left << result.name << " " << result.answer << " " <<
-        result.time << "\n"; });
+        std::fixed << result.time << "\n"; });
 }
