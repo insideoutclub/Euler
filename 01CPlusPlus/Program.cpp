@@ -139,5 +139,5 @@ int main()
 
   boost::for_each(boost::sort(results, sortByTime), [](Result const& result) {
     std::cout << std::setw(30) << std::left << result.name << " " << result.answer << " " <<
-        std::fixed << result.time << "\n"; });
+        std::fixed << std::setprecision(4) << result.time << "\n"; });
 }
