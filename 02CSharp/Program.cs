@@ -48,6 +48,19 @@ namespace _02CSharp
             return total;
         }
 
+        static int FilterFunctionCallImperative(int a, int b, int limit)
+        {
+            var total = 0;
+            while (a < limit)
+            {
+                if (IsEven(a)) total += a;
+                var sum = a + b;
+                a = b;
+                b = sum;
+            }
+            return total;
+        }
+
         static int NoFilterImperative(int a, int b, int limit)
         {
             var total = 0;
@@ -96,6 +109,7 @@ namespace _02CSharp
             var experiments = new Function[] {
                 FilterInlineFunctional,
                 FilterInlineImperative,
+                FilterFunctionCallImperative,
                 FilterFunctionCallFunctional,
                 NoFilterFunctional,
                 NoFilterImperative,
@@ -105,7 +119,7 @@ namespace _02CSharp
             foreach (var result in experiments
                 .Select(func => new { result = func(a, b, limit), time = Benchmark(() => func(a, b, limit), 1000), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
-                Console.WriteLine("{0,-30} {1} {2:00.000}", result.name, result.result, result.time);
+                Console.WriteLine("{0,-30} {1} {2:0.0000}", result.name, result.result, result.time);
         }
     }
 }

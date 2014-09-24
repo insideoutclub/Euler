@@ -57,7 +57,8 @@ static int GenerateMultiplesImperative(int limit, int x, int y)
   return sum;
 }
 
-static int SumMultiples(int x, int limit)
+// Compute the sum of [x, limit) step x using triangular numbers
+static int SumOfMultiplesOf(int x, int limit)
 {
   auto p = (limit - 1) / x;
   return x * p * (p + 1) / 2;
@@ -66,9 +67,9 @@ static int SumMultiples(int x, int limit)
 // Sum multiples of x
 // Sum multiples of y
 // Subtract multiples of x * y to eliminate duplicates
-static int SumMultiples(int limit, int x, int y)
+static int SumOfMultiples(int limit, int x, int y)
 {
-  return SumMultiples(x, limit) + SumMultiples(y, limit) - SumMultiples(x * y, limit);
+  return SumOfMultiplesOf(x, limit) + SumOfMultiplesOf(y, limit) - SumOfMultiplesOf(x * y, limit);
 }
 
 // Generate [1, limit)
@@ -76,9 +77,9 @@ static int SumMultiples(int limit, int x, int y)
 // Returns sum
 static int FilterFunctional(int limit, int x, int y)
 {
-  auto const multipleOfXOrY = [x, y](int const i) { return IsMultipleOf()(i, x) || IsMultipleOf()(i, y); };
+  auto const isMultipleOfXOrY = [x, y](int const i) { return IsMultipleOf()(i, x) || IsMultipleOf()(i, y); };
 
-  return boost::accumulate(boost::irange(1, limit) | boost::adaptors::filtered(multipleOfXOrY), 0);
+  return boost::accumulate(boost::irange(1, limit) | boost::adaptors::filtered(isMultipleOfXOrY), 0);
 }
 
 // Generate multiples of x up to but not including limit
@@ -125,7 +126,10 @@ private:
     int y;
 };
 
-#define RUN_EXPERIMENT(functor) results.emplace_back(Result(#functor, functor(limit, x, y), Benchmark(Functor(functor, limit, x, y), 1000)))
+#define RUN_EXPERIMENT(functor) results.emplace_back(Result( \
+    #functor, \
+    functor(limit, x, y), \
+    Benchmark(Functor(functor, limit, x, y), 1000)))
 
 int main()
 {
@@ -135,7 +139,7 @@ int main()
 
   RUN_EXPERIMENT(FilterImperative);
   RUN_EXPERIMENT(GenerateMultiplesImperative);
-  RUN_EXPERIMENT(SumMultiples);
+  RUN_EXPERIMENT(SumOfMultiples);
   RUN_EXPERIMENT(FilterFunctional);
   RUN_EXPERIMENT(GenerateMultiplesFunctional);
 

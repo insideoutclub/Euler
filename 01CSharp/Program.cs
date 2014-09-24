@@ -7,12 +7,6 @@ using Function = System.Func<int, int, int, int>;
 
 namespace _01CSharp
 {
-    static class ExtensionMethods
-    {
-        // Returns true if x is a multiple of y
-        public static bool IsMultipleOf(this int x, int y) { return x % y == 0; }
-    }
-
     class Program
     {
         // Run action the number of times specified by iterations
@@ -37,7 +31,7 @@ namespace _01CSharp
         {
             var sum = 0;
             for (var i = 1; i < limit; ++i)
-                if (i.IsMultipleOf(x) || i.IsMultipleOf(y))
+                if (i % x == 0 || i % y == 0)
                     sum += i;
             return sum;
         }
@@ -50,11 +44,14 @@ namespace _01CSharp
             var sum = 0;
             for (var i = x; i < limit; i += x) sum += i;
             for (var i = y; i < limit; i += y) sum += i;
-            for (var i = x * y; i < limit; i += x * y) sum -= i;
+
+            var product = x * y;
+            for (var i = product; i < limit; i += product) sum -= i;
             return sum;
         }
 
-        public static int SumMultiples(int x, int limit)
+        // Compute the sum of [x, limit) step x using triangular numbers
+        public static int SumOfMultiplesOf(int x, int limit)
         {
             var p = (limit - 1) / x;
             return x * p * (p + 1) / 2;
@@ -63,9 +60,9 @@ namespace _01CSharp
         // Sum multiples of x
         // Sum multiples of y
         // Subtract multiples of x * y to eliminate duplicates
-        public static int SumMultiples(int limit, int x, int y)
+        public static int SumOfMultiples(int limit, int x, int y)
         {
-            return SumMultiples(x, limit) + SumMultiples(y, limit) - SumMultiples(x * y, limit);
+            return SumOfMultiplesOf(x, limit) + SumOfMultiplesOf(y, limit) - SumOfMultiplesOf(x * y, limit);
         }
 
         // Generate [1, limit)
@@ -73,7 +70,7 @@ namespace _01CSharp
         // Returns sum
         public static int FilterFunctional(int limit, int x, int y)
         {
-            return Enumerable.Range(1, limit - 1).Where(i => i.IsMultipleOf(x) || i.IsMultipleOf(y)).Sum();
+            return Enumerable.Range(1, limit - 1).Where(i => i % x == 0 || i % y == 0).Sum();
         }
 
         // Generate multiples of x up to but not including limit
@@ -95,7 +92,7 @@ namespace _01CSharp
             var experiments = new Function[] {
                 FilterImperative,
                 GenerateMultiplesImperative,
-                SumMultiples,
+                SumOfMultiples,
                 FilterFunctional,
                 GenerateMultiplesFunctional,
             };
