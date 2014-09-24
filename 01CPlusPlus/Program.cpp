@@ -106,6 +106,10 @@ struct Result {
     double time;
 };
 
+// DO NOT TRY THIS AT HOME!!!!
+// This is a pessimization to prevent inlining.
+// Otherwise, the compiler detects that the functions have no side effects and the benchmarks take zero time.
+// Calling through a function pointer forces the compiler to execute the code.
 struct Functor {
     typedef int (*Function)(int limit, int x, int y);
 
@@ -135,9 +139,9 @@ int main()
   RUN_EXPERIMENT(FilterFunctional);
   RUN_EXPERIMENT(GenerateMultiplesFunctional);
 
-  auto const sortByTime = [](Result const& x, Result const& y) { return x.time < y.time; };
+  auto const byTime = [](Result const& x, Result const& y) { return x.time < y.time; };
 
-  boost::for_each(boost::sort(results, sortByTime), [](Result const& result) {
+  boost::for_each(boost::sort(results, byTime), [](Result const& result) {
     std::cout << std::setw(30) << std::left << result.name << " " << result.answer << " " <<
         std::fixed << std::setprecision(4) << result.time << "\n"; });
 }
