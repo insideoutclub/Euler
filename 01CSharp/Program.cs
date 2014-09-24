@@ -30,7 +30,9 @@ namespace _01CSharp
             return stopwatch.Elapsed.TotalMilliseconds;
         }
 
-        // Same as FilterInlineImperative, except multiples filter is a function call
+        // Generate [1, limit)
+        // Filter out multiples of x and y
+        // Returns sum
         public static int FilterImperative(int limit, int x, int y)
         {
             var sum = 0;
@@ -66,7 +68,9 @@ namespace _01CSharp
             return SumMultiples(x, limit) + SumMultiples(y, limit) - SumMultiples(x * y, limit);
         }
 
-        // Same as FilterInlineFunctional, except multiples filter is a function call
+        // Generate [1, limit)
+        // Filter out multiples of x and y
+        // Returns sum
         public static int FilterFunctional(int limit, int x, int y)
         {
             return Enumerable.Range(1, limit - 1).Where(i => i.IsMultipleOf(x) || i.IsMultipleOf(y)).Sum();
