@@ -64,8 +64,6 @@ std::tuple<int, int> evenFibonacciSwap(int a, int b) { return std::make_tuple(b,
 
 static int noFilterImperative(int a, int b, int limit) {
     auto sum = 0;
-    a = 2;
-    b = 8;
     while (a < limit) {
         sum += a;
         std::tie(a, b) = evenFibonacciSwap(a, b);
@@ -96,7 +94,7 @@ boost::iterator_range<EvenFibonacciIterator> evenFibonacciRange(int const a, int
 }
 
 static int noFilterFunctional(int a, int b, int limit) {
-    return boost::accumulate(evenFibonacciRange(2, 8, limit), 0);
+    return boost::accumulate(evenFibonacciRange(a, b, limit), 0);
 }
 
 struct Result {
@@ -127,21 +125,21 @@ private:
     int limit;
 };
 
-#define RUN_EXPERIMENT(functor) results.emplace_back(Result( \
+#define RUN_EXPERIMENT(functor, x, y, limit) results.emplace_back(Result( \
     #functor, \
     functor(x, y, limit), \
     Benchmark(Functor(functor, x, y, limit), 1000)))
 
 int main()
 {
-    auto const limit = 4000001, x = 1, y = 2;
+    auto const limit = 4000001;
 
     auto results = std::vector<Result>();
 
-    RUN_EXPERIMENT(filterFunctional);
-    RUN_EXPERIMENT(filterImperative);
-    RUN_EXPERIMENT(noFilterFunctional);
-    RUN_EXPERIMENT(noFilterImperative);
+    RUN_EXPERIMENT(filterFunctional, 1, 2, limit);
+    RUN_EXPERIMENT(filterImperative, 1, 2, limit);
+    RUN_EXPERIMENT(noFilterFunctional, 2, 8, limit);
+    RUN_EXPERIMENT(noFilterImperative, 2, 8, limit);
 
     auto const byTime = [](Result const& x, Result const& y) { return x.time < y.time; };
 
