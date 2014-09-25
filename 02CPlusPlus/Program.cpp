@@ -7,11 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-
-// Returns true if x is a multiple of y
-struct IsMultipleOf {
-  bool operator()(int const x, int const y) const { return x % y == 0; }
-};
+#include <tuple>
 
 // Run action the number of times specified by iterations
 // Returns the elapsed time in milliseconds
@@ -33,78 +29,75 @@ static double Benchmark(Action action, int iterations)
   return double(finish.QuadPart - start.QuadPart) * 1000 / frequency.QuadPart;
 }
 
-struct FibonacciIterator : public boost::iterator_facade<FibonacciIterator, int const, boost::forward_traversal_tag> {
+std::tuple<int, int> fibonacciSwap(int const a, int const b) { return std::make_tuple(b, a + b); }
+
+struct FibonacciIterator : public boost::iterator_facade<FibonacciIterator, int, boost::forward_traversal_tag, int> {
     FibonacciIterator() {}
-    FibonacciIterator(int a, int b, int limit) : a(a), b(b), limit(limit) {}
+    FibonacciIterator(int a, int b) : a(a), b(b) {}
 
 private:
     friend boost::iterator_core_access;
 
-    reference dereference() const { return a; }
-    bool equal(FibonacciIterator const&) const { return limit <= a; }
-    void increment() {
-        auto const sum = a + b;
-        a = b;
-        b = sum;
-    }
+    int dereference() const { return a; }
+    bool equal(FibonacciIterator const& that) const { return a >= that.a; }
+    void increment() { std::tie(a, b) = fibonacciSwap(a, b); }
     int a;
     int b;
-    int limit;
 };
 
 boost::iterator_range<FibonacciIterator> fibonacciRange(int const a, int const b, int const limit) {
-    return boost::make_iterator_range(FibonacciIterator(a, b, limit), FibonacciIterator());
+    return boost::make_iterator_range(FibonacciIterator(a, b), FibonacciIterator(limit, limit));
 }
 
-struct IsEven {
-    bool operator()(int const x) { return x % 2 == 0; }
-};
+struct IsEven { bool operator()(int const x) { return x % 2 == 0; } };
 
 static int filterImperative(int a, int b, int limit) {
-    auto total = 0;
+    auto sum = 0;
     while (a < limit) {
-        if (IsEven()(a)) total += a;
-        auto const sum = a + b;
-        a = b;
-        b = sum;
+        if (IsEven()(a)) sum += a;
+        std::tie(a, b) = fibonacciSwap(a, b);
     }
-    return total;
+    return sum;
 }
 
+std::tuple<int, int> evenFibonacciSwap(int a, int b) { return std::make_tuple(b, a + 4 * b); }
+
 static int noFilterImperative(int a, int b, int limit) {
-    auto total = 0;
+    auto sum = 0;
     a = 2;
     b = 8;
     while (a < limit) {
-        total += a;
-        auto const sum = a + 4 * b;
-        a = b;
-        b = sum;
+        sum += a;
+        std::tie(a, b) = evenFibonacciSwap(a, b);
     }
-    return total;
+    return sum;
 }
 
 static int filterFunctional(int a, int b, int limit) {
     return boost::accumulate(fibonacciRange(a, b, limit) | boost::adaptors::filtered(IsEven()), 0);
 }
 
-#if 0
-        static IEnumerable<int> EvenFibonacci(int a, int b, int limit)
-        {
-            while(a < limit)
-            {
-                yield return a;
-                var sum = 4 * b + a;
-                a = b;
-                b = sum;
-            }
-        }
+struct EvenFibonacciIterator : public boost::iterator_facade<EvenFibonacciIterator, int, boost::forward_traversal_tag, int> {
+    EvenFibonacciIterator() {}
+    EvenFibonacciIterator(int a, int b) : a(a), b(b) {}
 
-        static int NoFilterFunctional(int a, int b, int limit)
-        {
-            return EvenFibonacci(2, 8, limit).Sum();
-        }
-#endif
+private:
+    friend boost::iterator_core_access;
+
+    int dereference() const { return a; }
+    bool equal(EvenFibonacciIterator const& that) const { return a >= that.a; }
+    void increment() { std::tie(a, b) = evenFibonacciSwap(a, b); }
+    int a;
+    int b;
+};
+
+boost::iterator_range<EvenFibonacciIterator> evenFibonacciRange(int const a, int const b, int const limit) {
+    return boost::make_iterator_range(EvenFibonacciIterator(a, b), EvenFibonacciIterator(limit, limit));
+}
+
+static int noFilterFunctional(int a, int b, int limit) {
+    return boost::accumulate(evenFibonacciRange(2, 8, limit), 0);
+}
 
 struct Result {
     Result() {}
@@ -147,9 +140,7 @@ int main()
 
     RUN_EXPERIMENT(filterFunctional);
     RUN_EXPERIMENT(filterImperative);
-#if 0
-    RUN_EXPERIMENT(NoFilterFunctional);
-#endif
+    RUN_EXPERIMENT(noFilterFunctional);
     RUN_EXPERIMENT(noFilterImperative);
 
     auto const byTime = [](Result const& x, Result const& y) { return x.time < y.time; };
