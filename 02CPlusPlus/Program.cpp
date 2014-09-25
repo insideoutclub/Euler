@@ -29,7 +29,7 @@ static double Benchmark(Action action, int iterations)
   return double(finish.QuadPart - start.QuadPart) * 1000 / frequency.QuadPart;
 }
 
-std::tuple<int, int> fibonacciSwap(int const a, int const b) { return std::make_tuple(b, a + b); }
+std::tuple<int, int> nextFibonacci(int const a, int const b) { return std::make_tuple(b, a + b); }
 
 struct FibonacciIterator : public boost::iterator_facade<FibonacciIterator, int, boost::forward_traversal_tag, int> {
     FibonacciIterator() {}
@@ -40,7 +40,7 @@ private:
 
     int dereference() const { return a; }
     bool equal(FibonacciIterator const& that) const { return a >= that.a; }
-    void increment() { std::tie(a, b) = fibonacciSwap(a, b); }
+    void increment() { std::tie(a, b) = nextFibonacci(a, b); }
     int a;
     int b;
 };
@@ -55,18 +55,18 @@ static int filterImperative(int a, int b, int limit) {
     auto sum = 0;
     while (a < limit) {
         if (IsEven()(a)) sum += a;
-        std::tie(a, b) = fibonacciSwap(a, b);
+        std::tie(a, b) = nextFibonacci(a, b);
     }
     return sum;
 }
 
-std::tuple<int, int> evenFibonacciSwap(int a, int b) { return std::make_tuple(b, a + 4 * b); }
+std::tuple<int, int> nextEvenFibonacci(int a, int b) { return std::make_tuple(b, a + 4 * b); }
 
 static int noFilterImperative(int a, int b, int limit) {
     auto sum = 0;
     while (a < limit) {
         sum += a;
-        std::tie(a, b) = evenFibonacciSwap(a, b);
+        std::tie(a, b) = nextEvenFibonacci(a, b);
     }
     return sum;
 }
@@ -84,7 +84,7 @@ private:
 
     int dereference() const { return a; }
     bool equal(EvenFibonacciIterator const& that) const { return a >= that.a; }
-    void increment() { std::tie(a, b) = evenFibonacciSwap(a, b); }
+    void increment() { std::tie(a, b) = nextEvenFibonacci(a, b); }
     int a;
     int b;
 };
@@ -125,10 +125,10 @@ private:
     int limit;
 };
 
-#define RUN_EXPERIMENT(functor, x, y, limit) results.emplace_back(Result( \
+#define RUN_EXPERIMENT(functor, x, y) results.emplace_back(Result( \
     #functor, \
     functor(x, y, limit), \
-    Benchmark(Functor(functor, x, y, limit), 1000)))
+    Benchmark(Functor(functor, x, y, limit), 10000)))
 
 int main()
 {
@@ -136,10 +136,10 @@ int main()
 
     auto results = std::vector<Result>();
 
-    RUN_EXPERIMENT(filterFunctional, 1, 2, limit);
-    RUN_EXPERIMENT(filterImperative, 1, 2, limit);
-    RUN_EXPERIMENT(noFilterFunctional, 2, 8, limit);
-    RUN_EXPERIMENT(noFilterImperative, 2, 8, limit);
+    RUN_EXPERIMENT(filterFunctional, 1, 2);
+    RUN_EXPERIMENT(filterImperative, 1, 2);
+    RUN_EXPERIMENT(noFilterImperative, 2, 8);
+    RUN_EXPERIMENT(noFilterFunctional, 2, 8);
 
     auto const byTime = [](Result const& x, Result const& y) { return x.time < y.time; };
 
