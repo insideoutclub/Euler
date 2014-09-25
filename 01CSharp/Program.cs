@@ -11,7 +11,7 @@ namespace _01CSharp
     {
         // Run action the number of times specified by iterations
         // Returns the elapsed time in milliseconds
-        public static double Benchmark(Action action, int iterations)
+        public static double benchmark(Action action, int iterations)
         {
             action();
 
@@ -27,7 +27,7 @@ namespace _01CSharp
         // Generate [1, limit)
         // Filter out multiples of x and y
         // Returns sum
-        public static int FilterImperative(int limit, int x, int y)
+        public static int filterImperative(int limit, int x, int y)
         {
             var sum = 0;
             for (var i = 1; i < limit; ++i)
@@ -39,7 +39,7 @@ namespace _01CSharp
         // Sum multiples of x
         // Sum multiples of y
         // Subtract multiples of x * y to eliminate duplicates
-        public static int GenerateMultiplesImperative(int limit, int x, int y)
+        public static int generateMultiplesImperative(int limit, int x, int y)
         {
             var sum = 0;
             for (var i = x; i < limit; i += x) sum += i;
@@ -51,7 +51,7 @@ namespace _01CSharp
         }
 
         // Compute the sum of [x, limit) step x using triangular numbers
-        public static int SumOfMultiplesOf(int x, int limit)
+        public static int sumOfMultiplesOf(int x, int limit)
         {
             var p = (limit - 1) / x;
             return x * p * (p + 1) / 2;
@@ -60,21 +60,21 @@ namespace _01CSharp
         // Sum multiples of x
         // Sum multiples of y
         // Subtract multiples of x * y to eliminate duplicates
-        public static int SumOfMultiples(int limit, int x, int y)
+        public static int sumOfMultiples(int limit, int x, int y)
         {
-            return SumOfMultiplesOf(x, limit) + SumOfMultiplesOf(y, limit) - SumOfMultiplesOf(x * y, limit);
+            return sumOfMultiplesOf(x, limit) + sumOfMultiplesOf(y, limit) - sumOfMultiplesOf(x * y, limit);
         }
 
         // Generate [1, limit)
         // Filter out multiples of x and y
         // Returns sum
-        public static int FilterFunctional(int limit, int x, int y)
+        public static int filterFunctional(int limit, int x, int y)
         {
             return Enumerable.Range(1, limit - 1).Where(i => i % x == 0 || i % y == 0).Sum();
         }
 
         // Generate multiples of x up to but not including limit
-        public static IEnumerable<int> MultiplesOf(int x, int limit)
+        public static IEnumerable<int> multiplesOf(int x, int limit)
         {
             for (var i = x; i < limit; i += x) yield return i;
         }
@@ -82,24 +82,24 @@ namespace _01CSharp
         // Sum multiples of x
         // Sum multiples of y
         // Subtract multiples of x * y to eliminate duplicates
-        public static int GenerateMultiplesFunctional(int limit, int x, int y)
+        public static int generateMultiplesFunctional(int limit, int x, int y)
         {
-            return MultiplesOf(x, limit).Sum() + MultiplesOf(y, limit).Sum() - MultiplesOf(x * y, limit).Sum();
+            return multiplesOf(x, limit).Sum() + multiplesOf(y, limit).Sum() - multiplesOf(x * y, limit).Sum();
         }
 
         static void Main(string[] args)
         {
             var experiments = new Function[] {
-                FilterImperative,
-                GenerateMultiplesImperative,
-                SumOfMultiples,
-                FilterFunctional,
-                GenerateMultiplesFunctional,
+                filterImperative,
+                generateMultiplesImperative,
+                sumOfMultiples,
+                filterFunctional,
+                generateMultiplesFunctional,
             };
 
             const int limit = 1000, x = 3, y = 5;
             foreach (var result in experiments
-                .Select(func => new { result = func(limit, x, y), time = Benchmark(() => func(limit, x, y), 1000), name = func.Method.Name })
+                .Select(func => new { result = func(limit, x, y), time = benchmark(() => func(limit, x, y), 1000), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
                 Console.WriteLine("{0,-30} {1} {2:00.0000}", result.name, result.result, result.time);
         }

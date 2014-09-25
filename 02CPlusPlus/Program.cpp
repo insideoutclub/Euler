@@ -45,14 +45,14 @@ private:
     int b;
 };
 
-boost::iterator_range<FibonacciIterator> fibonacciRange(int const a, int const b, int const limit) {
-    return boost::make_iterator_range(FibonacciIterator(a, b), FibonacciIterator(limit, limit));
+boost::iterator_range<FibonacciIterator> fibonacciRange(int const limit) {
+    return boost::make_iterator_range(FibonacciIterator(1, 2), FibonacciIterator(limit, limit));
 }
 
 struct IsEven { bool operator()(int const x) { return x % 2 == 0; } };
 
-static int filterImperative(int a, int b, int limit) {
-    auto sum = 0;
+static int filterImperative(int limit) {
+    auto a = 1, b = 2, sum = 0;
     while (a < limit) {
         if (IsEven()(a)) sum += a;
         std::tie(a, b) = nextFibonacci(a, b);
@@ -62,8 +62,8 @@ static int filterImperative(int a, int b, int limit) {
 
 std::tuple<int, int> nextEvenFibonacci(int a, int b) { return std::make_tuple(b, a + 4 * b); }
 
-static int noFilterImperative(int a, int b, int limit) {
-    auto sum = 0;
+static int noFilterImperative(int limit) {
+    auto a = 2, b = 8, sum = 0;
     while (a < limit) {
         sum += a;
         std::tie(a, b) = nextEvenFibonacci(a, b);
@@ -71,13 +71,13 @@ static int noFilterImperative(int a, int b, int limit) {
     return sum;
 }
 
-static int filterFunctional(int a, int b, int limit) {
-    return boost::accumulate(fibonacciRange(a, b, limit) | boost::adaptors::filtered(IsEven()), 0);
+static int filterFunctional(int const limit) {
+    return boost::accumulate(fibonacciRange(limit) | boost::adaptors::filtered(IsEven()), 0);
 }
 
 struct EvenFibonacciIterator : public boost::iterator_facade<EvenFibonacciIterator, int, boost::forward_traversal_tag, int> {
     EvenFibonacciIterator() {}
-    EvenFibonacciIterator(int a, int b) : a(a), b(b) {}
+    EvenFibonacciIterator(int const a, int const b) : a(a), b(b) {}
 
 private:
     friend boost::iterator_core_access;
@@ -89,12 +89,12 @@ private:
     int b;
 };
 
-boost::iterator_range<EvenFibonacciIterator> evenFibonacciRange(int const a, int const b, int const limit) {
-    return boost::make_iterator_range(EvenFibonacciIterator(a, b), EvenFibonacciIterator(limit, limit));
+boost::iterator_range<EvenFibonacciIterator> evenFibonacciRange(int const limit) {
+    return boost::make_iterator_range(EvenFibonacciIterator(2, 8), EvenFibonacciIterator(limit, limit));
 }
 
-static int noFilterFunctional(int a, int b, int limit) {
-    return boost::accumulate(evenFibonacciRange(a, b, limit), 0);
+static int noFilterFunctional(int const limit) {
+    return boost::accumulate(evenFibonacciRange(limit), 0);
 }
 
 struct Result {
@@ -111,24 +111,22 @@ struct Result {
 // Otherwise, the compiler detects that the functions have no side effects and the benchmarks take zero time.
 // Calling through a function pointer forces the compiler to execute the code.
 struct Functor {
-    typedef int (*Function)(int x, int y, int limit);
+    typedef int (*Function)(int const limit);
 
     Functor() {}
-    Functor(Function function, int x, int y, int limit) : function(function), x(x), y(y), limit(limit) {}
+    Functor(Function const function, int const limit) : function(function),  limit(limit) {}
 
-    int operator()() const { return function(x, y, limit); }
+    int operator()() const { return function(limit); }
 
 private:
     Function function;
-    int x;
-    int y;
     int limit;
 };
 
-#define RUN_EXPERIMENT(functor, x, y) results.emplace_back(Result( \
+#define RUN_EXPERIMENT(functor) results.emplace_back(Result( \
     #functor, \
-    functor(x, y, limit), \
-    Benchmark(Functor(functor, x, y, limit), 10000)))
+    functor(limit), \
+    Benchmark(Functor(functor, limit), 1000)))
 
 int main()
 {
@@ -136,10 +134,10 @@ int main()
 
     auto results = std::vector<Result>();
 
-    RUN_EXPERIMENT(filterFunctional, 1, 2);
-    RUN_EXPERIMENT(filterImperative, 1, 2);
-    RUN_EXPERIMENT(noFilterImperative, 2, 8);
-    RUN_EXPERIMENT(noFilterFunctional, 2, 8);
+    RUN_EXPERIMENT(filterFunctional);
+    RUN_EXPERIMENT(filterImperative);
+    RUN_EXPERIMENT(noFilterImperative);
+    RUN_EXPERIMENT(noFilterFunctional);
 
     auto const byTime = [](Result const& x, Result const& y) { return x.time < y.time; };
 

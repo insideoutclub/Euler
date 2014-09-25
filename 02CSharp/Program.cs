@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
-using Function = System.Func<int, int, int, int>;
+using Function = System.Func<int, int>;
 
 namespace _02CSharp
 {
@@ -24,8 +24,10 @@ namespace _02CSharp
             return stopwatch.Elapsed.TotalMilliseconds;
         }
 
-        static IEnumerable<int> Fibonacci(int a, int b, int limit)
+        static IEnumerable<int> Fibonacci(int limit)
         {
+            var a = 1;
+            var b = 2;
             while (a < limit)
             {
                 yield return a;
@@ -35,8 +37,10 @@ namespace _02CSharp
             }
         }
 
-        static int FilterInlineImperative(int a, int b, int limit)
+        static int FilterImperative(int limit)
         {
+            var a = 1;
+            var b = 2;
             var total = 0;
             while (a < limit)
             {
@@ -48,24 +52,11 @@ namespace _02CSharp
             return total;
         }
 
-        static int FilterFunctionCallImperative(int a, int b, int limit)
+        static int NoFilterImperative(int limit)
         {
+            var a = 2;
+            var b = 8;
             var total = 0;
-            while (a < limit)
-            {
-                if (IsEven(a)) total += a;
-                var sum = a + b;
-                a = b;
-                b = sum;
-            }
-            return total;
-        }
-
-        static int NoFilterImperative(int a, int b, int limit)
-        {
-            var total = 0;
-            a = 2;
-            b = 8;
             while (a < limit)
             {
                 total += a;
@@ -76,20 +67,17 @@ namespace _02CSharp
             return total;
         }
 
-        static int FilterInlineFunctional(int a, int b, int limit)
-        {
-            return Fibonacci(a, b, limit).Where(x => x % 2 == 0).Sum();
-        }
-
         static bool IsEven(int x) { return x % 2 == 0; }
 
-        static int FilterFunctionCallFunctional(int a, int b, int limit)
+        static int FilterFunctional(int limit)
         {
-            return Fibonacci(a, b, limit).Where(IsEven).Sum();
+            return Fibonacci(limit).Where(IsEven).Sum();
         }
 
-        static IEnumerable<int> EvenFibonacci(int a, int b, int limit)
+        static IEnumerable<int> EvenFibonacci(int limit)
         {
+            var a = 2;
+            var b = 8;
             while(a < limit)
             {
                 yield return a;
@@ -99,25 +87,23 @@ namespace _02CSharp
             }
         }
 
-        static int NoFilterFunctional(int a, int b, int limit)
+        static int NoFilterFunctional(int limit)
         {
-            return EvenFibonacci(2, 8, limit).Sum();
+            return EvenFibonacci(limit).Sum();
         }
 
         static void Main(string[] args)
         {
             var experiments = new Function[] {
-                FilterInlineFunctional,
-                FilterInlineImperative,
-                FilterFunctionCallImperative,
-                FilterFunctionCallFunctional,
+                FilterImperative,
+                FilterFunctional,
                 NoFilterFunctional,
                 NoFilterImperative,
             };
 
-            const int a = 1, b = 2, limit = 4000001;
+            const int limit = 4000001;
             foreach (var result in experiments
-                .Select(func => new { result = func(a, b, limit), time = Benchmark(() => func(a, b, limit), 1000), name = func.Method.Name })
+                .Select(func => new { result = func(limit), time = Benchmark(() => func(limit), 1000), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
                 Console.WriteLine("{0,-30} {1} {2:0.0000}", result.name, result.result, result.time);
         }
