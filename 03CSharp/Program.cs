@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.Numerics;
 using Function = System.Func<long, long>;
 
 namespace _03CSharp
@@ -34,32 +35,16 @@ namespace _03CSharp
                 yield return result += addend;
         }
 
-        struct QuotientAndRemainder
-        {
-            public long quotient;
-            public long remainder;
-        }
-
-        static QuotientAndRemainder quotientAndRemainder(long dividend, long divisor)
-        {
-            QuotientAndRemainder result;
-            result.quotient = Math.DivRem(dividend, divisor, out result.remainder);
-            return result;
-        }
-
         static long largestPrimeFactor(long n)
         {
             var divisor = 2;
             var result = 1;
             while(n > 1)
             {
-                var q = quotientAndRemainder(n, divisor);
-                if(q.remainder == 0)
+                while(n % divisor == 0)
                 {
                     result = divisor;
-                    n = q.quotient;
-                    while((q = quotientAndRemainder(n, divisor)).remainder == 0)
-                        n = q.quotient;
+                    n /= divisor;
                 }
                 ++divisor;
             }
@@ -72,13 +57,10 @@ namespace _03CSharp
             var result = 1;
             while (n > 1)
             {
-                var q = quotientAndRemainder(n, divisor);
-                if (q.remainder == 0)
+                while(n % divisor == 0)
                 {
                     result = divisor;
-                    n = q.quotient;
-                    while ((q = quotientAndRemainder(n, divisor)).remainder == 0)
-                        n = q.quotient;
+                    n /= divisor;
                 }
                 divisor += divisor == 2 ? 1 : 2;
             }
@@ -89,17 +71,55 @@ namespace _03CSharp
         {
             var divisor = 2;
             var result = 1;
-            while (n > 1)
+            while (n > 1 && divisor * divisor <= n)
             {
-                var q = new QuotientAndRemainder();
-                while((q = quotientAndRemainder(n, divisor)).remainder == 0)
+                while (n % divisor == 0)
                 {
                     result = divisor;
-                    n = q.quotient;
+                    n /= divisor;
                 }
                 divisor += divisor == 2 ? 1 : 2;
             }
-            return result;
+            return n == 1 ? result : n;
+        }
+
+        static long largestPrimeFactor4(long n)
+        {
+            var divisor = 2;
+            var result = 1;
+            var addend = 2;
+            while (n > 1 && divisor * divisor <= n)
+            {
+                while (n % divisor == 0)
+                {
+                    result = divisor;
+                    n /= divisor;
+                }
+                switch(divisor) 
+                {
+                    case 2: divisor = 3; break;
+                    case 3: divisor = 5; break;
+                    default: divisor += addend; addend = addend == 2 ? 4 : 2; break;
+                }
+            }
+            return n == 1 ? result : n;
+        }
+
+        static long fermatsMethod(long n)
+        {
+            var sqrt = (long)Math.Sqrt(n);
+            var a = 2 * sqrt + 1;
+            var b = 1;
+            var r = new BigInteger(sqrt) * sqrt;
+            C2:
+            if (r == 0)
+                return (a - b) / 2;
+            r = r + a; a = a + 2;
+            C4:
+            r = r - b; b = b + 2;
+            if(r > 0)
+                goto C4;
+            goto C2;
         }
 
         static void Main(string[] args)
@@ -108,6 +128,8 @@ namespace _03CSharp
                 largestPrimeFactor,
                 largestPrimeFactor2,
                 largestPrimeFactor3,
+                largestPrimeFactor4,
+                fermatsMethod,
             };
 
             const long n = 600851475143;
