@@ -94,7 +94,6 @@ namespace _03CSharp
             return n == 1 ? result : n;
         }
 
-
         static void Main(string[] args)
         {
             var experiments = new Function[] {
