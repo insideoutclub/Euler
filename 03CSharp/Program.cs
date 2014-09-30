@@ -94,6 +94,30 @@ namespace _03CSharp
             return n == 1 ? result : n;
         }
 
+        static long largestPrimeFactor5(long n)
+        {
+            var divisor = 2;
+            var result = 1;
+            var gaps = new[] { 4, 2, 4, 2, 4, 6, 2, 6 };
+            var i = 0;
+            while (n > 1 && divisor * divisor <= n)
+            {
+                while (n % divisor == 0)
+                {
+                    result = divisor;
+                    n /= divisor;
+                }
+                switch (divisor)
+                {
+                    case 2: divisor = 3; break;
+                    case 3: divisor = 5; break;
+                    case 5: divisor = 7; break;
+                    default: divisor += gaps[i]; i = (i + 1) % gaps.Length; break;
+                }
+            }
+            return n == 1 ? result : n;
+        }
+
         static void Main(string[] args)
         {
             var experiments = new Function[] {
@@ -101,6 +125,7 @@ namespace _03CSharp
                 largestPrimeFactor2,
                 largestPrimeFactor3,
                 largestPrimeFactor4,
+                largestPrimeFactor5,
             };
 
             const long n = 600851475143;

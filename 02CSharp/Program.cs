@@ -11,7 +11,7 @@ namespace _02CSharp
     {
         // Run action the number of times specified by iterations
         // Returns the elapsed time in milliseconds
-        public static double Benchmark(Action action, int iterations)
+        public static double benchmark(Action action, int iterations)
         {
             action();
 
@@ -24,24 +24,28 @@ namespace _02CSharp
             return stopwatch.Elapsed.TotalMilliseconds;
         }
 
-        static IEnumerable<int> Fibonacci(int limit)
+        struct FibonacciPair
         {
-            var a = 1;
-            var b = 2;
-            while (a < limit)
+            public int a_;
+            public int b_;
+
+            public FibonacciPair(int a, int b) { a_ = a; b_ = b; }
+
+            public FibonacciPair next()
             {
-                yield return a;
-                var sum = a + b;
-                a = b;
-                b = sum;
+                return new FibonacciPair(b_, a_ + b_);
             }
         }
 
-        static int FilterImperative(int limit)
+        static IEnumerable<int> fibonacci()
         {
-            var a = 1;
-            var b = 2;
-            var total = 0;
+            for(var x = new FibonacciPair(1, 2); true; x = x.next())
+                yield return x.a_;
+        }
+
+        static int filterImperative(int limit)
+        {
+            int a = 1, b = 2, total = 0;
             while (a < limit)
             {
                 if (a % 2 == 0) total += a;
@@ -52,7 +56,7 @@ namespace _02CSharp
             return total;
         }
 
-        static int NoFilterImperative(int limit)
+        static int noFilterImperative(int limit)
         {
             var a = 2;
             var b = 8;
@@ -67,18 +71,18 @@ namespace _02CSharp
             return total;
         }
 
-        static bool IsEven(int x) { return x % 2 == 0; }
+        static bool isEven(int x) { return x % 2 == 0; }
 
-        static int FilterFunctional(int limit)
+        static int filterFunctional(int limit)
         {
-            return Fibonacci(limit).Where(IsEven).Sum();
+            return fibonacci().TakeWhile(x => x < limit).Where(isEven).Sum();
         }
 
-        static IEnumerable<int> EvenFibonacci(int limit)
+        static IEnumerable<int> evenFibonacci()
         {
             var a = 2;
             var b = 8;
-            while(a < limit)
+            while(true)
             {
                 yield return a;
                 var sum = 4 * b + a;
@@ -87,23 +91,23 @@ namespace _02CSharp
             }
         }
 
-        static int NoFilterFunctional(int limit)
+        static int noFilterFunctional(int limit)
         {
-            return EvenFibonacci(limit).Sum();
+            return evenFibonacci().TakeWhile(x => x < limit).Sum();
         }
 
         static void Main(string[] args)
         {
             var experiments = new Function[] {
-                FilterImperative,
-                FilterFunctional,
-                NoFilterFunctional,
-                NoFilterImperative,
+                filterImperative,
+                filterFunctional,
+                noFilterFunctional,
+                noFilterImperative,
             };
 
             const int limit = 4000001;
             foreach (var result in experiments
-                .Select(func => new { result = func(limit), time = Benchmark(() => func(limit), 1000), name = func.Method.Name })
+                .Select(func => new { result = func(limit), time = benchmark(() => func(limit), 1000), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
                 Console.WriteLine("{0,-30} {1} {2:0.0000}", result.name, result.result, result.time);
         }
