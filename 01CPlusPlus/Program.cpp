@@ -8,9 +8,22 @@
 #include <iomanip>
 #include <vector>
 
-// Returns true if x is a multiple of y
+// Returns true if dividend is a multiple of divisor
 struct IsMultipleOf {
-  bool operator()(int const x, int const y) const { return x % y == 0; }
+    explicit IsMultipleOf(int const divisor = int()) : divisor(divisor) {}
+    bool operator()(int const dividend) const { return dividend % divisor == 0; }
+    int const divisor;
+};
+
+// Returns true if dividend is a multiple of either divisor0 or divisor1
+struct IsMultipleOfEither {
+    explicit IsMultipleOfEither(int const divisor0 = int(), int const divisor1 = int())
+        : isMultipleOfDivisor0(divisor0), isMultipleOfDivisor1(divisor1) {}
+    bool operator()(int const dividend) const {
+        return isMultipleOfDivisor0(dividend) || isMultipleOfDivisor1(dividend);
+    }
+    IsMultipleOf isMultipleOfDivisor0;
+    IsMultipleOf isMultipleOfDivisor1;
 };
 
 // Run action the number of times specified by iterations
@@ -39,8 +52,9 @@ static double Benchmark(Action action, int iterations)
 static int FilterImperative(int limit, int x, int y)
 {
   auto sum = 0;
+  auto const isMultipleOfXOrY = IsMultipleOfEither(x, y);
   for (auto i = 1; i < limit; ++i)
-    if (IsMultipleOf()(i, x) || IsMultipleOf()(i, y))
+    if (isMultipleOfXOrY(i))
       sum += i;
   return sum;
 }
@@ -77,9 +91,7 @@ static int SumOfMultiples(int limit, int x, int y)
 // Returns sum
 static int FilterFunctional(int limit, int x, int y)
 {
-  auto const isMultipleOfXOrY = [x, y](int const i) { return IsMultipleOf()(i, x) || IsMultipleOf()(i, y); };
-
-  return boost::accumulate(boost::irange(1, limit) | boost::adaptors::filtered(isMultipleOfXOrY), 0);
+  return boost::accumulate(boost::irange(1, limit) | boost::adaptors::filtered(IsMultipleOfEither(x, y)), 0);
 }
 
 // Generate multiples of x up to but not including limit

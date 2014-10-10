@@ -4,6 +4,7 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/algorithm/sort.hpp>
 #include <boost/range/algorithm/for_each.hpp>
+#include <boost/range/adaptor/argument_fwd.hpp>
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -30,71 +31,145 @@ static double Benchmark(Action action, int iterations)
 }
 
 std::tuple<int, int> nextFibonacci(int const a, int const b) { return std::make_tuple(b, a + b); }
+std::tuple<int, int> previousFibonacci(int const a, int const b) { return std::make_tuple(b - a, a); }
 
-struct FibonacciIterator : public boost::iterator_facade<FibonacciIterator, int, boost::forward_traversal_tag, int> {
-    FibonacciIterator() {}
-    FibonacciIterator(int a, int b) : a(a), b(b) {}
+struct fibonacci_iterator
+    : public boost::iterator_facade<fibonacci_iterator, int, boost::bidirectional_traversal_tag, int> {
+
+    explicit fibonacci_iterator(int const a = int(), int const b = int()) : a(a), b(b) {}
 
 private:
     friend boost::iterator_core_access;
 
     int dereference() const { return a; }
-    bool equal(FibonacciIterator const& that) const { return a >= that.a; }
+    bool equal(fibonacci_iterator const& that) const { return a == that.a && b == that.b; }
     void increment() { std::tie(a, b) = nextFibonacci(a, b); }
+    void decrement() { std::tie(a, b) = previousFibonacci(a, b); }
     int a;
     int b;
 };
 
-boost::iterator_range<FibonacciIterator> fibonacciRange(int const limit) {
-    return boost::make_iterator_range(FibonacciIterator(1, 2), FibonacciIterator(limit, limit));
+template<typename Predicate, typename Iterator>
+struct take_while_iterator : public boost::iterator_adaptor<take_while_iterator<Predicate, Iterator>, Iterator> {\
+    typedef boost::iterator_adaptor<take_while_iterator<Predicate, Iterator>, Iterator> super_t;
+
+    take_while_iterator() {}
+    take_while_iterator(Predicate predicate, Iterator x) : super_t(x), predicate(predicate) {}
+
+private:
+    friend boost::iterator_core_access;
+
+    bool equal(take_while_iterator const& that) const { return !this->predicate(*this->base()); }
+
+    Predicate predicate;
+};
+
+template <class Predicate, class Iterator>
+take_while_iterator<Predicate,Iterator>
+make_take_while_iterator(Predicate f, Iterator x) {
+    return take_while_iterator<Predicate,Iterator>(f,x);
 }
 
-struct IsEven { bool operator()(int const x) { return x % 2 == 0; } };
+template< class P, class R >
+struct take_while_range :
+    boost::iterator_range<
+        take_while_iterator< P,
+            typename boost::range_iterator<R>::type
+        >
+    > {
+private:
+    typedef boost::iterator_range<
+                take_while_iterator< P,
+                    typename boost::range_iterator<R>::type
+                >
+            > base;
+
+public:
+    take_while_range( P p, R& r )
+    : base( make_take_while_iterator( p, std::begin(r)),
+            make_take_while_iterator( p, std::end(r)))
+    { }
+};
+
+template< class T >
+struct take_while_holder : boost::range_detail::holder<T> {
+    take_while_holder( T r ) : holder<T>(r) { }
+};
+
+template< class InputRng, class Predicate >
+inline take_while_range<Predicate, InputRng>
+operator|( InputRng& r, const take_while_holder<Predicate>& f ) {
+    return take_while_range<Predicate, InputRng>( f.val, r );
+}
+
+template< class InputRng, class Predicate >
+inline take_while_range<Predicate, const InputRng>
+operator|( const InputRng& r, const take_while_holder<Predicate>& f ) {
+    return take_while_range<Predicate, const InputRng>( f.val, r );
+}
+
+const boost::range_detail::forwarder<take_while_holder> take_while = boost::range_detail::forwarder<take_while_holder>();
+
+boost::iterator_range<fibonacci_iterator> fibonacci_range(int const a, int const b) {
+    return boost::make_iterator_range(fibonacci_iterator(a, b), fibonacci_iterator());
+}
+
+struct IsEven {
+    bool operator()(int const x) { return !(x & 1); }
+} isEven;
 
 static int filterImperative(int limit) {
-    auto a = 1, b = 2, sum = 0;
-    while (a < limit) {
-        if (IsEven()(a)) sum += a;
-        std::tie(a, b) = nextFibonacci(a, b);
-    }
+    auto sum = 0;
+    for(auto a = 1, b = 2; a < limit; std::tie(a, b) = nextFibonacci(a, b))
+        if (isEven(a))
+            sum += a;
     return sum;
 }
 
-std::tuple<int, int> nextEvenFibonacci(int a, int b) { return std::make_tuple(b, a + 4 * b); }
+std::tuple<int, int> nextEvenFibonacci(int const a, int const b) { return std::make_tuple(b, a + 4 * b); }
+std::tuple<int, int> previousEvenFibonacci(int const a, int const b) { return std::make_tuple(b - 4 *a, a); }
 
 static int noFilterImperative(int limit) {
-    auto a = 2, b = 8, sum = 0;
-    while (a < limit) {
+    auto sum = 0;
+    for (auto a = 2, b = 8; a < limit; std::tie(a, b) = nextEvenFibonacci(a, b))
         sum += a;
-        std::tie(a, b) = nextEvenFibonacci(a, b);
-    }
     return sum;
 }
 
+struct LessThanLimit {
+    explicit LessThanLimit(int limit = int()) : limit(limit) {}
+    bool operator()(int const x) const { return x < limit; }
+    int limit;
+};
+
 static int filterFunctional(int const limit) {
-    return boost::accumulate(fibonacciRange(limit) | boost::adaptors::filtered(IsEven()), 0);
+    return boost::accumulate(fibonacci_range(1, 2)
+                           | boost::adaptors::filtered(isEven)
+                           | take_while(LessThanLimit(limit)), 0);
 }
 
-struct EvenFibonacciIterator : public boost::iterator_facade<EvenFibonacciIterator, int, boost::forward_traversal_tag, int> {
-    EvenFibonacciIterator() {}
-    EvenFibonacciIterator(int const a, int const b) : a(a), b(b) {}
+struct even_fibonacci_iterator
+    : public boost::iterator_facade<even_fibonacci_iterator, int, boost::forward_traversal_tag, int> {
+
+    explicit even_fibonacci_iterator(int const a = int(), int const b = int()) : a(a), b(b) {}
 
 private:
     friend boost::iterator_core_access;
 
     int dereference() const { return a; }
-    bool equal(EvenFibonacciIterator const& that) const { return a >= that.a; }
+    bool equal(even_fibonacci_iterator const& that) const { return a == that.a && b == that.b; }
     void increment() { std::tie(a, b) = nextEvenFibonacci(a, b); }
+    void decrement() { std::tie(a, b) = previousEvenFibonacci(a, b); }
     int a;
     int b;
 };
 
-boost::iterator_range<EvenFibonacciIterator> evenFibonacciRange(int const limit) {
-    return boost::make_iterator_range(EvenFibonacciIterator(2, 8), EvenFibonacciIterator(limit, limit));
+boost::iterator_range<even_fibonacci_iterator> even_fibonacci_range() {
+    return boost::make_iterator_range(even_fibonacci_iterator(2, 8), even_fibonacci_iterator());
 }
 
 static int noFilterFunctional(int const limit) {
-    return boost::accumulate(evenFibonacciRange(limit), 0);
+    return boost::accumulate(even_fibonacci_range() | take_while(LessThanLimit(limit)), 0);
 }
 
 struct Result {
