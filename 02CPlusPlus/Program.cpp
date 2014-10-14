@@ -42,7 +42,7 @@ private:
     friend boost::iterator_core_access;
 
     int dereference() const { return a; }
-    bool equal(fibonacci_iterator const& that) const { return a == that.a && b == that.b; }
+    bool equal(fibonacci_iterator const& that) const { return false; }
     void increment() { std::tie(a, b) = nextFibonacci(a, b); }
     void decrement() { std::tie(a, b) = previousFibonacci(a, b); }
     int a;
@@ -145,7 +145,8 @@ struct LessThanLimit {
 static int filterFunctional(int const limit) {
     return boost::accumulate(fibonacci_range(1, 2)
                            | boost::adaptors::filtered(isEven)
-                           | take_while(LessThanLimit(limit)), 0);
+                           | take_while(LessThanLimit(limit))
+                           , 0);
 }
 
 struct even_fibonacci_iterator
@@ -157,7 +158,7 @@ private:
     friend boost::iterator_core_access;
 
     int dereference() const { return a; }
-    bool equal(even_fibonacci_iterator const& that) const { return a == that.a && b == that.b; }
+    bool equal(even_fibonacci_iterator const& that) const { return false; }
     void increment() { std::tie(a, b) = nextEvenFibonacci(a, b); }
     void decrement() { std::tie(a, b) = previousEvenFibonacci(a, b); }
     int a;
