@@ -24,23 +24,17 @@ namespace _02CSharp
             return stopwatch.Elapsed.TotalMilliseconds;
         }
 
-        struct FibonacciPair
-        {
-            public int a_;
-            public int b_;
-
-            public FibonacciPair(int a, int b) { a_ = a; b_ = b; }
-
-            public FibonacciPair next()
-            {
-                return new FibonacciPair(b_, a_ + b_);
-            }
-        }
-
         static IEnumerable<int> fibonacci()
         {
-            for(var x = new FibonacciPair(1, 2); true; x = x.next())
-                yield return x.a_;
+            var a = 1;
+            var b = 2;
+            while (true)
+            {
+                yield return a;
+                var sum = a + b;
+                a = b;
+                b = sum;
+            }
         }
 
         static int filterImperative(int limit)
@@ -48,7 +42,7 @@ namespace _02CSharp
             int a = 1, b = 2, total = 0;
             while (a < limit)
             {
-                if (a % 2 == 0) total += a;
+                if ((a & 1) != 0) total += a;
                 var sum = a + b;
                 a = b;
                 b = sum;
@@ -71,11 +65,11 @@ namespace _02CSharp
             return total;
         }
 
-        static bool isEven(int x) { return x % 2 == 0; }
+        static bool isEven(int x) { return (x & 1) != 0; }
 
         static int filterFunctional(int limit)
         {
-            return fibonacci().TakeWhile(x => x < limit).Where(isEven).Sum();
+            return fibonacci().Where(isEven).TakeWhile(x => x < limit).Sum();
         }
 
         static IEnumerable<int> evenFibonacci()
