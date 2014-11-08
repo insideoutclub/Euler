@@ -42,7 +42,7 @@ namespace _02CSharp
             int a = 1, b = 2, total = 0;
             while (a < limit)
             {
-                if ((a & 1) != 0) total += a;
+                if ((a & 1) == 0) total += a;
                 var sum = a + b;
                 a = b;
                 b = sum;
@@ -65,7 +65,7 @@ namespace _02CSharp
             return total;
         }
 
-        static bool isEven(int x) { return (x & 1) != 0; }
+        static bool isEven(int x) { return (x & 1) == 0; }
 
         static int filterFunctional(int limit)
         {
