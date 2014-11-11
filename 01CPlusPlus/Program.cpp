@@ -7,6 +7,11 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <range/v3/numeric/accumulate.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/iota.hpp>
+#include <range/v3/algorithm/sort.hpp>
+#include <range/v3/algorithm/for_each.hpp>
 
 // Returns true if i is a multiple of 3 or 5
 struct IsMultipleOf3Or5 {
@@ -77,7 +82,7 @@ static int SumOfMultiples()
 // Returns sum
 static int FilterFunctional()
 {
-  return boost::accumulate(boost::irange(1, 1000) | boost::adaptors::filtered(IsMultipleOf3Or5()), 0);
+  return ranges::accumulate(ranges::view::ints(1, 999) | ranges::view::filter(IsMultipleOf3Or5()), 0);
 }
 
 // Generate multiples of x up to but not including 1000
@@ -138,7 +143,8 @@ int main()
 
   auto const byTime = [](Result const& x, Result const& y) { return x.time < y.time; };
 
-  boost::for_each(boost::sort(results, byTime), [](Result const& result) {
+  ranges::sort(results, byTime);
+  ranges::for_each(results, [](Result const& result) {
     std::cout << std::setw(30) << std::left << result.name << " " << result.answer << " " <<
         std::fixed << std::setprecision(4) << result.time << "\n"; });
 }
