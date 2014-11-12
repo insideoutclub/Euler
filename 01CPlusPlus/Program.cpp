@@ -40,7 +40,7 @@ static int FilterImperative()
 {
   auto sum = 0;
   for (auto i = 1; i < 1000; ++i)
-    if (IsMultipleOf3Or5()(i))
+    if (i % 3 == 0 || i % 5 == 0)
       sum += i;
   return sum;
 }
@@ -83,11 +83,11 @@ static int FilterFunctional()
 struct strided_range : public ranges::range_facade<strided_range>
 {
     strided_range() = default;
-    explicit strided_range(int first, int last, int step_size) : first(first), last(last), step_size(step_size) {}
+    strided_range(int first, int last, int step_size) : first(first), last(last), step_size(step_size) {}
 private:
     friend ranges::range_access;
     int const & current() const { return first; }
-    bool done() const { return last < first; }
+    bool done() const { return first >= last; }
     void next() { first += step_size; }
     int first, last, step_size;
 };
@@ -97,9 +97,9 @@ private:
 // Subtract multiples of 3 * 5 to eliminate duplicates
 static int GenerateMultiplesFunctional()
 {
-    return ranges::accumulate(strided_range(3, 999, 3), 0) +
-        ranges::accumulate(strided_range(5, 999, 5), 0) -
-        ranges::accumulate(strided_range(15, 999, 15), 0);
+    return ranges::accumulate(strided_range(3, 1000, 3), 0) +
+        ranges::accumulate(strided_range(5, 1000, 5), 0) -
+        ranges::accumulate(strided_range(15, 1000, 15), 0);
 }
 
 struct Result {
@@ -130,22 +130,22 @@ private:
 #define RUN_EXPERIMENT(functor) results.emplace_back(Result( \
     #functor, \
     functor(), \
-    Benchmark(Functor(functor), 1000)))
+    Benchmark(Functor(functor), 100000)))
 
 int main()
 {
   auto results = std::vector<Result>();
 
-  RUN_EXPERIMENT(FilterImperative);
   RUN_EXPERIMENT(GenerateMultiplesImperative);
   RUN_EXPERIMENT(SumOfMultiples);
   RUN_EXPERIMENT(FilterFunctional);
   RUN_EXPERIMENT(GenerateMultiplesFunctional);
+  RUN_EXPERIMENT(FilterImperative);
 
   auto const byTime = [](Result const& x, Result const& y) { return x.time < y.time; };
 
   ranges::sort(results, byTime);
   ranges::for_each(results, [](Result const& result) {
     std::cout << std::setw(30) << std::left << result.name << " " << result.answer << " " <<
-        std::fixed << std::setprecision(4) << result.time << "\n"; });
+        std::fixed << std::setprecision(4) << result.time / 100 << "\n"; });
 }
