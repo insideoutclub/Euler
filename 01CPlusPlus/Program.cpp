@@ -1,9 +1,4 @@
 ﻿#include <windows.h>
-#include <boost/range/irange.hpp>
-#include <boost/range/numeric.hpp>
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/algorithm/sort.hpp>
-#include <boost/range/algorithm/for_each.hpp>
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -85,20 +80,26 @@ static int FilterFunctional()
   return ranges::accumulate(ranges::view::ints(1, 999) | ranges::view::filter(IsMultipleOf3Or5()), 0);
 }
 
-// Generate multiples of x up to but not including 1000
-static boost::strided_integer_range<int> MultiplesOf(int x)
+struct strided_range : public ranges::range_facade<strided_range>
 {
-  return boost::irange(x, 1000, x);
-}
+    strided_range() = default;
+    explicit strided_range(int first, int last, int step_size) : first(first), last(last), step_size(step_size) {}
+private:
+    friend ranges::range_access;
+    int const & current() const { return first; }
+    bool done() const { return last < first; }
+    void next() { first += step_size; }
+    int first, last, step_size;
+};
 
 // Sum multiples of 3
 // Sum multiples of 5
 // Subtract multiples of 3 * 5 to eliminate duplicates
 static int GenerateMultiplesFunctional()
 {
-  return boost::accumulate(MultiplesOf(3), 0) +
-         boost::accumulate(MultiplesOf(5), 0) -
-         boost::accumulate(MultiplesOf(3 * 5), 0);
+    return ranges::accumulate(strided_range(3, 999, 3), 0) +
+        ranges::accumulate(strided_range(5, 999, 5), 0) -
+        ranges::accumulate(strided_range(15, 999, 15), 0);
 }
 
 struct Result {
