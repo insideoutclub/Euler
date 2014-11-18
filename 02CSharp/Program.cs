@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
-using Function = System.Func<int, int>;
+using Function = System.Func<int>;
 
 namespace _02CSharp
 {
@@ -37,10 +37,10 @@ namespace _02CSharp
             }
         }
 
-        static int filterImperative(int limit)
+        static int filterImperative()
         {
             int a = 1, b = 2, total = 0;
-            while (a < limit)
+            while (a <= 4000000)
             {
                 if ((a & 1) == 0) total += a;
                 var sum = a + b;
@@ -50,12 +50,12 @@ namespace _02CSharp
             return total;
         }
 
-        static int noFilterImperative(int limit)
+        static int noFilterImperative()
         {
             var a = 2;
             var b = 8;
             var total = 0;
-            while (a < limit)
+            while (a <= 4000000)
             {
                 total += a;
                 var sum = a + 4 * b;
@@ -67,9 +67,9 @@ namespace _02CSharp
 
         static bool isEven(int x) { return (x & 1) == 0; }
 
-        static int filterFunctional(int limit)
+        static int filterFunctional()
         {
-            return fibonacci().Where(isEven).TakeWhile(x => x < limit).Sum();
+            return fibonacci().Where(isEven).TakeWhile(x => x <= 4000000).Sum();
         }
 
         static IEnumerable<int> evenFibonacci()
@@ -85,9 +85,9 @@ namespace _02CSharp
             }
         }
 
-        static int noFilterFunctional(int limit)
+        static int noFilterFunctional()
         {
-            return evenFibonacci().TakeWhile(x => x < limit).Sum();
+            return evenFibonacci().TakeWhile(x => x <= 4000000).Sum();
         }
 
         static void Main(string[] args)
@@ -99,9 +99,8 @@ namespace _02CSharp
                 noFilterImperative,
             };
 
-            const int limit = 4000001;
             foreach (var result in experiments
-                .Select(func => new { result = func(limit), time = benchmark(() => func(limit), 1000), name = func.Method.Name })
+                .Select(func => new { result = func(), time = benchmark(() => func(), 1000), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
                 Console.WriteLine("{0,-30} {1} {2:0.0000}", result.name, result.result, result.time);
         }
