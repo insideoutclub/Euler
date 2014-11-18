@@ -7,7 +7,7 @@ using Function = System.Func<int>;
 
 namespace _02CSharp
 {
-    class Program
+    static class Program
     {
         // Run action the number of times specified by iterations
         // Returns the elapsed time in milliseconds
@@ -24,70 +24,71 @@ namespace _02CSharp
             return stopwatch.Elapsed.TotalMilliseconds;
         }
 
+        static IEnumerable<TResult> Unfold<T, TResult>(this T next, Func<T, Tuple<TResult, T>> generator)
+        {
+            var result = Tuple.Create(default(TResult), next);
+            while((result = generator(result.Item2)) != null)
+                yield return result.Item1;
+        }
+
+        static Tuple<int, Tuple<int, int>> nextFibonacci(Tuple<int, int> state)
+        {
+            return Tuple.Create(state.Item1, Tuple.Create(state.Item2, state.Item1 + state.Item2));
+        }
+
         static IEnumerable<int> fibonacci()
         {
-            var a = 1;
-            var b = 2;
-            while (true)
-            {
-                yield return a;
-                var sum = a + b;
-                a = b;
-                b = sum;
-            }
+            return Tuple.Create(1, 2).Unfold(nextFibonacci);
         }
 
         static int filterImperative()
         {
-            int a = 1, b = 2, total = 0;
+            int a = 1, b = 2, sum = 0;
             while (a <= 4000000)
             {
-                if ((a & 1) == 0) total += a;
-                var sum = a + b;
+                if ((a & 1) == 0) sum += a;
+                var aPlusB = a + b;
                 a = b;
-                b = sum;
+                b = aPlusB;
             }
-            return total;
+            return sum;
         }
 
         static int noFilterImperative()
         {
-            var a = 2;
-            var b = 8;
-            var total = 0;
+            int a = 2, b = 8, sum = 0;
             while (a <= 4000000)
             {
-                total += a;
-                var sum = a + 4 * b;
+                sum += a;
+                var aPlus4b = a + 4 * b;
                 a = b;
-                b = sum;
+                b = aPlus4b;
             }
-            return total;
+            return sum;
         }
 
         static bool isEven(int x) { return (x & 1) == 0; }
 
+        static bool doesNotExceedFourMillion(int x) { return x <= 4000000; }
+
         static int filterFunctional()
         {
-            return fibonacci().Where(isEven).TakeWhile(x => x <= 4000000).Sum();
+            return fibonacci().TakeWhile(doesNotExceedFourMillion).Where(isEven).Sum();
+        }
+
+        static Tuple<int, Tuple<int, int>> nextEvenFibonacci(Tuple<int, int> state)
+        {
+            return Tuple.Create(state.Item1, Tuple.Create(state.Item2, state.Item1 + 4 * state.Item2));
         }
 
         static IEnumerable<int> evenFibonacci()
         {
-            var a = 2;
-            var b = 8;
-            while(true)
-            {
-                yield return a;
-                var sum = 4 * b + a;
-                a = b;
-                b = sum;
-            }
+            return Tuple.Create(2, 8).Unfold(nextEvenFibonacci);
         }
 
         static int noFilterFunctional()
         {
-            return evenFibonacci().TakeWhile(x => x <= 4000000).Sum();
+            return evenFibonacci().TakeWhile(doesNotExceedFourMillion).Sum();
         }
 
         static void Main(string[] args)
@@ -100,9 +101,9 @@ namespace _02CSharp
             };
 
             foreach (var result in experiments
-                .Select(func => new { result = func(), time = benchmark(() => func(), 1000), name = func.Method.Name })
+                .Select(func => new { result = func(), time = benchmark(() => func(), 100000), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
-                Console.WriteLine("{0,-30} {1} {2:0.0000}", result.name, result.result, result.time);
+                Console.WriteLine("{0,-30} {1} {2:0.0000}", result.name, result.result, result.time / 100);
         }
     }
 }
