@@ -33,7 +33,9 @@ namespace _02CSharp
 
         static Tuple<int, Tuple<int, int>> nextFibonacci(Tuple<int, int> state)
         {
-            return Tuple.Create(state.Item1, Tuple.Create(state.Item2, state.Item1 + state.Item2));
+            var nextValueInSequence = state.Item1;
+            var nextState = Tuple.Create(state.Item2, state.Item1 + state.Item2);
+            return Tuple.Create(nextValueInSequence, nextState);
         }
 
         static IEnumerable<int> fibonacci()
