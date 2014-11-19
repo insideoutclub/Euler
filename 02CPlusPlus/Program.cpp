@@ -43,9 +43,7 @@ private:
     int dereference() const { return a; }
     bool equal(fibonacci_iterator const&) const { return a > limit; }
     void increment() { std::tie(a, b) = nextFibonacci(a, b); }
-    int a;
-    int b;
-    int limit;
+    int a, b, limit;
 };
 
 boost::iterator_range<fibonacci_iterator> fibonacci_range(int const a, int const b, int const limit) {
