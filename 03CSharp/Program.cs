@@ -1,16 +1,38 @@
-﻿using System;
+﻿// Copyright (C) 2014 Teradyne, Inc. All rights reserved.
+//
+// This document contains proprietary and confidential information of Teradyne,
+// Inc. and is tendered subject to the condition that the informaipation (a) be
+// retained in confidence and (b) not be used or incorporated in any product
+// except with the express written consent of Teradyne, Inc.
+//
+// Revision History:
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using Function = System.Func<long, long>;
 
-namespace _03CSharp
+namespace Teradyne._03CSharp
 {
+    /// <summary>
+    /// 
+    /// </summary>
     internal static class Program
     {
-        // Run action the number of times specified by iterations
-        // Returns the elapsed time in milliseconds
+        private const long TWO = 2;
+        private const long THREE = 3;
+        private const long FOUR = 4;
+        private const long FIVE = 5;
+        private const long SEVEN = 7;
+
+        /// <summary>
+        /// Run action the number of times specified by iterations
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="iterations"></param>
+        /// <returns>Returns the elapsed time in milliseconds</returns>
         public static double Benchmark(Action action, int iterations)
         {
             action();
@@ -20,111 +42,134 @@ namespace _03CSharp
 
             var stopwatch = Stopwatch.StartNew();
             for (var i = 0; i != iterations; ++i)
+            {
                 action();
+            }
             return stopwatch.Elapsed.TotalMilliseconds;
         }
 
-        private static IEnumerable<long> Divisors()
-        {
-            for (var result = 2; true; ++result)
-                yield return result;
-        }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="next"></param>
+        /// <param name="generator"></param>
+        /// <returns></returns>
         private static IEnumerable<TResult> Unfold<T, TResult>(this T next, Func<T, Tuple<TResult, T>> generator)
         {
             var result = Tuple.Create(default(TResult), next);
             while ((result = generator(result.Item2)) != null)
+            {
                 yield return result.Item1;
-        }
-
-        private struct Generator
-        {
-            private readonly long _p;
-
-            public Generator(long p) { _p = p; }
-
-            public Tuple<long, long> Generate(long n)
-            {
-                if (n % _p != 0)
-                    return null;
-                var next = n / _p;
-                return Tuple.Create(next, next);
             }
         }
 
-        private static IEnumerable<long> FactorsFound(long n, long p)
-        {
-            return n.Unfold(new Generator(p).Generate);
-        }
-
-        private static IEnumerable<long> PrimeFactors2(long n)
-        {
-#if false
-            foreach (var p in Divisors())
-            {
-                if (p * p > n)
-                    break;
-                foreach (var x in FactorsFound(n, p))
-                {
-                    n = x;
-                    yield return p;
-                }
-            }
-            if (n > 1)
-                yield return n;
-#else
-            var firstDivisor = Divisors().FirstOrDefault(divisor => n % divisor == 0);
-            return null;
-#endif
-        }
-
-        private static bool isFactor(long n, long d)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <param name="d"></param>
+        /// <returns></returns>
+        private static bool IsFactor(long n, long d)
         {
             return n % d == 0;
         }
 
-        private static long nextDivisor(long d)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="d"></param>
+        /// <returns></returns>
+        private static long NextDivisor(long d)
         {
-            return d == 2 ? 3 : d + 2;
+            return d == TWO ? THREE : d + TWO;
         }
 
-        private static long nextFactor(long n, long d)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <param name="d"></param>
+        /// <returns></returns>
+        private static long NextFactor(long n, long d)
         {
-            var x = nextDivisor(d);
-            return isFactor(n, x) ? x : nextFactor(n, x);
+            var x = NextDivisor(d);
+            return IsFactor(n, x) ? x : NextFactor(n, x);
         }
 
-        private static List<long> findFactors(long n, long d, List<long> acc)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <param name="d"></param>
+        /// <param name="acc"></param>
+        /// <returns></returns>
+        private static List<long> FindFactors(long n, long d, List<long> acc)
         {
-            if (isFactor(n, d))
+            if (IsFactor(n, d))
             {
                 acc.Add(d);
-                return findFactors(n / d, d, acc);
+                return FindFactors(n / d, d, acc);
             }
             else if (n > d)
             {
-                return findFactors(n, nextFactor(n, d), acc);
+                return FindFactors(n, NextFactor(n, d), acc);
             }
             return acc;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
         private static IEnumerable<long> PrimeFactors3(long n)
         {
-            return findFactors(n, 2, new List<long>());
+            return FindFactors(n, TWO, new List<long>());
         }
 
-        static IEnumerable<long> divisors()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private static IEnumerable<long> Divisors()
         {
             yield return 2;
             var result = 3L;
             while (true)
             {
                 yield return result;
-                result += 2;
+                result += TWO;
             }
         }
 
-        static IEnumerable<long> factor(long n, IEnumerator<long> divisors)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="current"></param>
+        /// <returns></returns>
+        private static Tuple<long, long> Generator(long current)
+        {
+            return Tuple.Create(current, current == TWO ? THREE : current + TWO);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private static IEnumerable<long> Divisors2()
+        {
+            return TWO.Unfold(Generator);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <param name="divisors"></param>
+        /// <returns></returns>
+        private static IEnumerable<long> Factor(long n, IEnumerator<long> divisors)
         {
             var p = divisors.Current;
             if (p * p > n)
@@ -134,25 +179,50 @@ namespace _03CSharp
             else if (n % p == 0)
             {
                 yield return p;
-                foreach (var item in factor(n / p, divisors))
+                foreach (var item in Factor(n / p, divisors))
+                {
                     yield return item;
+                }
             }
             else
             {
                 divisors.MoveNext();
-                foreach (var item in factor(n, divisors))
+                foreach (var item in Factor(n, divisors))
+                {
                     yield return item;
+                }
             }
         }
 
-        private static IEnumerable<long> PrimeFactors(long n)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <param name="divisors"></param>
+        /// <returns></returns>
+        private static IEnumerable<long> Factor2(long n, IEnumerator<long> divisors)
         {
-            var d = divisors().GetEnumerator();
-            d.MoveNext();
-            return factor(n, d);
+            return null;
         }
 
-        private static long largestPrimeFactor(long n)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static IEnumerable<long> PrimeFactors(long n)
+        {
+            var d = Divisors2().GetEnumerator();
+            d.MoveNext();
+            return Factor(n, d);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static long LargestPrimeFactor(long n)
         {
             var divisor = 2;
             var result = 1;
@@ -168,10 +238,15 @@ namespace _03CSharp
             return result;
         }
 
-        private static long largestPrimeFactor2(long n)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static long LargestPrimeFactor2(long n)
         {
-            var divisor = 2;
-            var result = 1;
+            var divisor = 2L;
+            var result = 1L;
             while (n > 1)
             {
                 while(n % divisor == 0)
@@ -179,15 +254,20 @@ namespace _03CSharp
                     result = divisor;
                     n /= divisor;
                 }
-                divisor += divisor == 2 ? 1 : 2;
+                divisor += divisor == TWO ? 1 : TWO;
             }
             return result;
         }
 
-        private static long largestPrimeFactor3(long n)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static long LargestPrimeFactor3(long n)
         {
-            var divisor = 2;
-            var result = 1;
+            var divisor = 2L;
+            var result = 1L;
             while (divisor * divisor <= n)
             {
                 while (n % divisor == 0)
@@ -195,16 +275,21 @@ namespace _03CSharp
                     result = divisor;
                     n /= divisor;
                 }
-                divisor += divisor == 2 ? 1 : 2;
+                divisor += divisor == TWO ? 1 : TWO;
             }
             return n == 1 ? result : n;
         }
 
-        private static long largestPrimeFactor4(long n)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static long LargestPrimeFactor4(long n)
         {
-            var divisor = 2;
-            var result = 1;
-            var addend = 2;
+            var divisor = 2L;
+            var result = 1L;
+            var addend = 2L;
             while (divisor * divisor <= n)
             {
                 while (n % divisor == 0)
@@ -214,26 +299,31 @@ namespace _03CSharp
                 }
                 switch(divisor) 
                 {
-                    case 2:
-                        divisor = 3;
+                    case TWO:
+                        divisor = THREE;
                         break;
-                    case 3:
-                        divisor = 5;
+                    case THREE:
+                        divisor = FIVE;
                         break;
                     default:
                         divisor += addend;
-                        addend = addend == 2 ? 4 : 2;
+                        addend = addend == TWO ? FOUR : TWO;
                         break;
                 }
             }
             return n == 1 ? result : n;
         }
 
-        private static long largestPrimeFactor5(long n)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static long LargestPrimeFactor5(long n)
         {
-            var divisor = 2;
-            var result = 1;
-            var gaps = new[] { 4, 2, 4, 2, 4, 6, 2, 6 };
+            var divisor = 2L;
+            var result = 1L;
+            var gaps = new[] { 4L, 2L, 4L, 2L, 4L, 6L, 2L, 6L };
             var i = 0;
             while (divisor * divisor <= n)
             {
@@ -244,14 +334,14 @@ namespace _03CSharp
                 }
                 switch (divisor)
                 {
-                    case 2:
-                        divisor = 3;
+                    case TWO:
+                        divisor = THREE;
                         break;
-                    case 3:
-                        divisor = 5;
+                    case THREE:
+                        divisor = FIVE;
                         break;
-                    case 5:
-                        divisor = 7;
+                    case FIVE:
+                        divisor = SEVEN;
                         break;
                     default:
                         divisor += gaps[i];
@@ -262,24 +352,30 @@ namespace _03CSharp
             return n == 1 ? result : n;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="args"></param>
         private static void Main(string[] args)
         {
             var experiments = new Function[]
             {
-                largestPrimeFactor,
-                largestPrimeFactor2,
-                largestPrimeFactor3,
-                largestPrimeFactor4,
-                largestPrimeFactor5,
+                LargestPrimeFactor,
+                LargestPrimeFactor2,
+                LargestPrimeFactor3,
+                LargestPrimeFactor4,
+                LargestPrimeFactor5,
             };
-            const long n = 600851475143;
-            Console.WriteLine(string.Join(", ", PrimeFactors(n)));
+            const long N = 600851475143;
+            Console.WriteLine(string.Join(", ", PrimeFactors(N)));
             return;
 
             foreach (var result in experiments
-                .Select(func => new { result = func(n), time = Benchmark(() => func(n), 1000), name = func.Method.Name })
+                .Select(func => new { result = func(N), time = Benchmark(() => func(N), 1000), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
+            {
                 Console.WriteLine("{0,-30} {1} {2:0.0000}", result.name, result.result, result.time);
+            }
         }
     }
 }
