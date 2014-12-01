@@ -166,32 +166,13 @@ namespace Teradyne._03CSharp
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="n"></param>
-        /// <param name="divisors"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumerator"></param>
         /// <returns></returns>
-        private static IEnumerable<long> Factor(long n, IEnumerator<long> divisors)
+        private static IEnumerator<T> MoveNext<T>(IEnumerator<T> enumerator)
         {
-            var p = divisors.Current;
-            if (p * p > n)
-            {
-                yield return n;
-            }
-            else if (n % p == 0)
-            {
-                yield return p;
-                foreach (var item in Factor(n / p, divisors))
-                {
-                    yield return item;
-                }
-            }
-            else
-            {
-                divisors.MoveNext();
-                foreach (var item in Factor(n, divisors))
-                {
-                    yield return item;
-                }
-            }
+            enumerator.MoveNext();
+            return enumerator;
         }
 
         /// <summary>
@@ -202,7 +183,10 @@ namespace Teradyne._03CSharp
         /// <returns></returns>
         private static IEnumerable<long> Factor2(long n, IEnumerator<long> divisors)
         {
-            return null;
+            var d = divisors.Current;
+            return d * d > n ? Enumerable.Repeat(n, 1) :
+                n % d == 0 ? Enumerable.Repeat(d, 1).Concat(Factor2(n / d, divisors)) :
+                Factor2(n, MoveNext(divisors));
         }
 
         /// <summary>
@@ -212,9 +196,7 @@ namespace Teradyne._03CSharp
         /// <returns></returns>
         private static IEnumerable<long> PrimeFactors(long n)
         {
-            var d = Divisors2().GetEnumerator();
-            d.MoveNext();
-            return Factor(n, d);
+            return Factor2(n, MoveNext(Divisors2().GetEnumerator()));
         }
 
         /// <summary>
