@@ -130,9 +130,9 @@ namespace Teradyne._03CSharp
         /// </summary>
         /// <param name="n"></param>
         /// <returns></returns>
-        private static IEnumerable<long> PrimeFactors(long n)
+        private static long LargestPrimeFactorFunctional(long n)
         {
-            return Factor2(n, MoveNext(Divisors2().GetEnumerator()));
+            return Factor2(n, MoveNext(Divisors2().GetEnumerator())).Last();
         }
 
         /// <summary>
@@ -283,10 +283,9 @@ namespace Teradyne._03CSharp
                 LargestPrimeFactor3,
                 LargestPrimeFactor4,
                 LargestPrimeFactor5,
+                LargestPrimeFactorFunctional,
             };
             const long N = 600851475143;
-            Console.WriteLine(string.Join(", ", PrimeFactors(N)));
-            return;
 
             foreach (var result in experiments
                 .Select(func => new { result = func(N), time = Benchmark(() => func(N), 1000), name = func.Method.Name })
