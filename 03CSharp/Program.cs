@@ -142,8 +142,8 @@ namespace Teradyne._03CSharp
         /// <returns></returns>
         private static long LargestPrimeFactor(long n)
         {
-            var divisor = 2;
-            var result = 1;
+            var divisor = 2L;
+            var result = 1L;
             while(n > 1)
             {
                 while(n % divisor == 0)
@@ -172,7 +172,7 @@ namespace Teradyne._03CSharp
                     result = divisor;
                     n /= divisor;
                 }
-                divisor += divisor == TWO ? 1 : TWO;
+                divisor = divisor == TWO ? THREE : divisor + TWO;
             }
             return result;
         }

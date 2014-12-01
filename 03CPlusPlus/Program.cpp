@@ -27,8 +27,8 @@ static double Benchmark(Action action, int iterations)
 }
 
 static int64_t largestPrimeFactor(int64_t n) {
-    auto divisor = 2;
-    auto result = 1;
+    int64_t divisor = 2;
+    int64_t result = 1;
     while(n > 1) {
         while(n % divisor == 0) {
             result = divisor;
@@ -40,34 +40,34 @@ static int64_t largestPrimeFactor(int64_t n) {
 }
 
 static int64_t largestPrimeFactor2(int64_t n) {
-    auto divisor = 2;
-    auto result = 1;
+    int64_t divisor = 2;
+    int64_t result = 1;
     while (n > 1) {
         while(n % divisor == 0) {
             result = divisor;
             n /= divisor;
         }
-        divisor += divisor == 2 ? 1 : 2;
+        divisor = divisor == 2 ? 3 : divisor + 2;
     }
     return result;
 }
 
 static int64_t largestPrimeFactor3(int64_t n) {
-    auto divisor = 2;
-    auto result = 1;
+    int64_t divisor = 2;
+    int64_t result = 1;
     while (n > 1 && divisor * divisor <= n) {
         while (n % divisor == 0) {
             result = divisor;
             n /= divisor;
         }
-        divisor += divisor == 2 ? 1 : 2;
+        divisor = divisor == 2 ? 3 : divisor + 2;
     }
     return n == 1 ? result : n;
 }
 
 static int64_t largestPrimeFactor4(int64_t n) {
-    auto divisor = 2;
-    auto result = 1;
+    int64_t divisor = 2;
+    int64_t result = 1;
     auto addend = 2;
     while (n > 1 && divisor * divisor <= n) {
         while (n % divisor == 0) {
@@ -78,6 +78,27 @@ static int64_t largestPrimeFactor4(int64_t n) {
             case 2: divisor = 3; break;
             case 3: divisor = 5; break;
             default: divisor += addend; addend = addend == 2 ? 4 : 2; break;
+        }
+    }
+    return n == 1 ? result : n;
+}
+
+static int64_t largestPrimeFactor5(int64_t n) {
+    int64_t divisor = 2;
+    int64_t result = 1;
+    int const gaps[] = { 4LL, 2LL, 4LL, 2LL, 4LL, 6LL, 2LL, 6LL };
+    auto const gapsLength = std::end(gaps) - std::begin(gaps);
+    auto i = 0;
+    while (n > 1 && divisor * divisor <= n) {
+        while (n % divisor == 0) {
+            result = divisor;
+            n /= divisor;
+        }
+        switch(divisor) {
+            case 2: divisor = 3; break;
+            case 3: divisor = 5; break;
+            case 5: divisor = 7; break;
+            default: divisor += gaps[i]; i = (i + 1) % gapsLength; break;
         }
     }
     return n == 1 ? result : n;
@@ -124,6 +145,7 @@ int main()
     RUN_EXPERIMENT(largestPrimeFactor2);
     RUN_EXPERIMENT(largestPrimeFactor3);
     RUN_EXPERIMENT(largestPrimeFactor4);
+    RUN_EXPERIMENT(largestPrimeFactor5);
 
     auto const byTime = [](Result const& x, Result const& y) { return x.time < y.time; };
 
