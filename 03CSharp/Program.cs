@@ -9,9 +9,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Diagnostics;
+using System.Linq;
 using Function = System.Func<long, long>;
 
 namespace Teradyne._03CSharp
@@ -78,24 +77,15 @@ namespace Teradyne._03CSharp
         /// <summary>
         /// 
         /// </summary>
-        /// <returns></returns>
-        private static IEnumerable<long> Skip2sDivisors()
-        {
-            return TWO.Unfold(Skip2sGenerator);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
         /// <param name="n"></param>
         /// <param name="divisors"></param>
         /// <returns></returns>
-        private static IEnumerable<long> Factor2<State>(long n, State divisor, Func<State, Tuple<long, State>> nextDivisor)
+        private static IEnumerable<long> Factor2<State>(long n, State state, Func<State, Tuple<long, State>> nextDivisor)
         {
-            var divisorAndState = nextDivisor(divisor);
-            var d = divisorAndState.Item1;
-            return d * d > n ? Enumerable.Repeat(n, 1) :
-                n % d == 0 ? Enumerable.Repeat(d, 1).Concat(Factor2(n / d, divisor, nextDivisor)) :
+            var divisorAndState = nextDivisor(state);
+            var divisor = divisorAndState.Item1;
+            return divisor * divisor > n ? Enumerable.Repeat(n, 1) :
+                n % divisor == 0 ? Enumerable.Repeat(divisor, 1).Concat(Factor2(n / divisor, state, nextDivisor)) :
                 Factor2(n, divisorAndState.Item2, nextDivisor);
         }
 
