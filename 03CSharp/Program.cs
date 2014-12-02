@@ -68,24 +68,9 @@ namespace Teradyne._03CSharp
         /// <summary>
         /// 
         /// </summary>
-        /// <returns></returns>
-        private static IEnumerable<long> Divisors()
-        {
-            yield return 2;
-            var result = 3L;
-            while (true)
-            {
-                yield return result;
-                result += TWO;
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
         /// <param name="current"></param>
         /// <returns></returns>
-        private static Tuple<long, long> Generator(long current)
+        private static Tuple<long, long> Skip2sGenerator(long current)
         {
             return Tuple.Create(current, current == TWO ? THREE : current + TWO);
         }
@@ -94,21 +79,9 @@ namespace Teradyne._03CSharp
         /// 
         /// </summary>
         /// <returns></returns>
-        private static IEnumerable<long> Divisors2()
+        private static IEnumerable<long> Skip2sDivisors()
         {
-            return TWO.Unfold(Generator);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="enumerator"></param>
-        /// <returns></returns>
-        private static IEnumerator<T> MoveNext<T>(IEnumerator<T> enumerator)
-        {
-            enumerator.MoveNext();
-            return enumerator;
+            return TWO.Unfold(Skip2sGenerator);
         }
 
         /// <summary>
@@ -117,12 +90,13 @@ namespace Teradyne._03CSharp
         /// <param name="n"></param>
         /// <param name="divisors"></param>
         /// <returns></returns>
-        private static IEnumerable<long> Factor2(long n, IEnumerator<long> divisors)
+        private static IEnumerable<long> Factor2<State>(long n, State divisor, Func<State, Tuple<long, State>> nextDivisor)
         {
-            var d = divisors.Current;
+            var divisorAndState = nextDivisor(divisor);
+            var d = divisorAndState.Item1;
             return d * d > n ? Enumerable.Repeat(n, 1) :
-                n % d == 0 ? Enumerable.Repeat(d, 1).Concat(Factor2(n / d, divisors)) :
-                Factor2(n, MoveNext(divisors));
+                n % d == 0 ? Enumerable.Repeat(d, 1).Concat(Factor2(n / d, divisor, nextDivisor)) :
+                Factor2(n, divisorAndState.Item2, nextDivisor);
         }
 
         /// <summary>
@@ -132,7 +106,7 @@ namespace Teradyne._03CSharp
         /// <returns></returns>
         private static long LargestPrimeFactorFunctional(long n)
         {
-            return Factor2(n, MoveNext(Divisors2().GetEnumerator())).Last();
+            return Factor2(n, 2L, Skip2sGenerator).Last();
         }
 
         /// <summary>
