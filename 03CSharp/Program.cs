@@ -77,16 +77,86 @@ namespace Teradyne._03CSharp
         /// <summary>
         /// 
         /// </summary>
+        private struct Skip2sAnd3s
+        {
+            private readonly long _divisor;
+            private readonly long _addend;
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="divisor"></param>
+            /// <param name="addend"></param>
+            internal Skip2sAnd3s(long divisor, long addend)
+            {
+                _divisor = divisor;
+                _addend = addend;
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="state"></param>
+            /// <returns></returns>
+            internal static Tuple<long, Skip2sAnd3s> Skip2sAnd3sGenerator(Skip2sAnd3s state)
+            {
+                return Tuple.Create(state._divisor,
+                    state._divisor == TWO ? new Skip2sAnd3s(THREE, 0) :
+                    state._divisor == THREE ? new Skip2sAnd3s(FIVE, TWO) :
+                    new Skip2sAnd3s(state._divisor + state._addend, state._addend == TWO ? FOUR : TWO));
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private struct Skip2s3sAnd5s
+        {
+            private readonly long _divisor;
+            private readonly static long[] _gaps = new[] { 4L, 2L, 4L, 2L, 4L, 6L, 2L, 6L };
+            private readonly int _i;
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="divisor"></param>
+            /// <param name="i"></param>
+            internal Skip2s3sAnd5s(long divisor, int i)
+            {
+                _divisor = divisor;
+                _i = i;
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="state"></param>
+            /// <returns></returns>
+            internal static Tuple<long, Skip2s3sAnd5s> Skip2s3sAnd5sGenerator(Skip2s3sAnd5s state)
+            {
+                return Tuple.Create(state._divisor,
+                    state._divisor == TWO ? new Skip2s3sAnd5s(THREE, 0) :
+                    state._divisor == THREE ? new Skip2s3sAnd5s(FIVE, 0) :
+                    state._divisor == FIVE ? new Skip2s3sAnd5s(SEVEN, 0) :
+                    new Skip2s3sAnd5s(state._divisor + _gaps[state._i], (state._i + 1) % _gaps.Length));
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="State"></typeparam>
         /// <param name="n"></param>
-        /// <param name="divisors"></param>
+        /// <param name="state"></param>
+        /// <param name="nextDivisor"></param>
         /// <returns></returns>
-        private static IEnumerable<long> Factor2<State>(long n, State state, Func<State, Tuple<long, State>> nextDivisor)
+        private static IEnumerable<long> Factor<State>(long n, State state, Func<State, Tuple<long, State>> nextDivisor)
         {
             var divisorAndState = nextDivisor(state);
             var divisor = divisorAndState.Item1;
             return divisor * divisor > n ? Enumerable.Repeat(n, 1) :
-                n % divisor == 0 ? Enumerable.Repeat(divisor, 1).Concat(Factor2(n / divisor, state, nextDivisor)) :
-                Factor2(n, divisorAndState.Item2, nextDivisor);
+                n % divisor == 0 ? Enumerable.Repeat(divisor, 1).Concat(Factor(n / divisor, state, nextDivisor)) :
+                Factor(n, divisorAndState.Item2, nextDivisor);
         }
 
         /// <summary>
@@ -94,9 +164,39 @@ namespace Teradyne._03CSharp
         /// </summary>
         /// <param name="n"></param>
         /// <returns></returns>
-        private static long LargestPrimeFactorFunctional(long n)
+        private static long LargestPrimeFactorFunctional0(long n)
         {
-            return Factor2(n, 2L, Skip2sGenerator).Last();
+            return Factor(n, TWO, (i => Tuple.Create(i, i + 1))).Last();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static long LargestPrimeFactorFunctional1(long n)
+        {
+            return Factor(n, TWO, Skip2sGenerator).Last();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static long LargestPrimeFactorFunctional2(long n)
+        {
+            return Factor(n, new Skip2sAnd3s(TWO, 0), Skip2sAnd3s.Skip2sAnd3sGenerator).Last();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static long LargestPrimeFactorFunctional3(long n)
+        {
+            return Factor(n, new Skip2s3sAnd5s(TWO, 0), Skip2s3sAnd5s.Skip2s3sAnd5sGenerator).Last();
         }
 
         /// <summary>
@@ -157,7 +257,7 @@ namespace Teradyne._03CSharp
                     result = divisor;
                     n /= divisor;
                 }
-                divisor += divisor == TWO ? 1 : TWO;
+                divisor = divisor == TWO ? THREE : divisor + TWO;
             }
             return n == 1 ? result : n;
         }
@@ -247,7 +347,10 @@ namespace Teradyne._03CSharp
                 LargestPrimeFactor3,
                 LargestPrimeFactor4,
                 LargestPrimeFactor5,
-                LargestPrimeFactorFunctional,
+                LargestPrimeFactorFunctional0,
+                LargestPrimeFactorFunctional1,
+                LargestPrimeFactorFunctional2,
+                LargestPrimeFactorFunctional3,
             };
             const long N = 600851475143;
 
