@@ -5,7 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <boost/format.hpp>
+#include <string>
 
 // Run action the number of times specified by iterations
 // Returns the elapsed time in milliseconds
@@ -27,9 +27,9 @@ static double Benchmark(Action action, int iterations)
   return double(finish.QuadPart - start.QuadPart) * 1000 / frequency.QuadPart;
 }
 
-static bool isPalindromeString(int x)
+static bool isPalindromeString(long long x)
 {
-    auto s = (boost::format("%1%") % x).str();
+    auto s = std::to_string(x);
     return boost::equal(s, s | boost::adaptors::reversed);
 }
 
@@ -49,7 +49,20 @@ static bool isPalindrome(int x)
     return x == reverse(x);
 }
 
-static int iterativeString()
+static int imperativeString()
+{
+    auto maximum = 0;
+    for(auto i = 100; i != 1000; ++i)
+        for (auto j = 100; j != 1000; ++j)
+        {
+            auto product = i * j;
+            if (isPalindromeString(product) && product > maximum)
+                maximum = product;
+        }
+    return maximum;
+}
+
+static int imperativeString2()
 {
     auto maximum = 0;
     for(auto i = 100; i != 1000; ++i)
@@ -124,7 +137,8 @@ int main()
 {
     auto results = std::vector<Result>();
 
-    RUN_EXPERIMENT(iterativeString);
+    RUN_EXPERIMENT(imperativeString);
+    RUN_EXPERIMENT(imperativeString2);
     RUN_EXPERIMENT(iterativeMath);
     RUN_EXPERIMENT(iterativeMath2);
 

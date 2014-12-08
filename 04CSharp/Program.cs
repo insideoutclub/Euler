@@ -44,7 +44,20 @@ namespace _04CSharp
             return x == reverse(x);
         }
 
-        private static int iterativeString()
+        private static int imperativeString()
+        {
+            var maximum = int.MinValue;
+            for (var i = 100; i != 1000; ++i)
+                for (var j = 100; j != 1000; ++j)
+                {
+                    var product = i * j;
+                    if (isPalindromeString(product) && product > maximum)
+                        maximum = product;
+                }
+            return maximum;
+        }
+
+        private static int imperativeString2()
         {
             var maximum = int.MinValue;
             for(var i = 100; i != 1000; ++i)
@@ -70,7 +83,7 @@ namespace _04CSharp
             return maximum;
         }
 
-        private static int iterativeMath2()
+        private static int imperativeNumber2()
         {
             var maximum = int.MinValue;
             for (var i = 999; i != 99; --i)
@@ -98,13 +111,13 @@ namespace _04CSharp
         {
             var experiments = new Function[]
             {
-                iterativeString,
+                imperativeString,
+                imperativeString2,
                 iterativeMath,
-                iterativeMath2,
-                functional,
+                imperativeNumber2,
             };
             foreach (var result in experiments
-                .Select(func => new { result = func(), time = Benchmark(() => func(), 10), name = func.Method.Name })
+                .Select(func => new { result = func(), time = Benchmark(() => func(), 1), name = func.Method.Name })
                 .OrderBy(tuple => tuple.time))
             {
                 Console.WriteLine("{0,-30} {1} {2:0.0000}", result.name, result.result, result.time);
